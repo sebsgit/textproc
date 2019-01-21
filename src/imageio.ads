@@ -1,6 +1,3 @@
-with Interfaces.C;
-with Interfaces.C.Strings;
-
 with PixelArray;
 with StbiWrapper;
 
@@ -9,8 +6,6 @@ package ImageIO is
                             Post => Check,
                             Type_Invariant => Check);
 
-   package C renames Interfaces.C;
-
-   function load(filename: C.Strings.chars_ptr) return PixelArray.ImagePlane;
-   function save(filename: C.Strings.chars_ptr; image: PixelArray.ImagePlane) return Boolean;
+   function load(filename: String) return PixelArray.ImagePlane;
+   function save(filename: String; image: PixelArray.ImagePlane) return Boolean;
 end ImageIO;

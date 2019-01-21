@@ -1,4 +1,5 @@
 with Interfaces.C; use Interfaces.C;
+with Interfaces.C.Strings;
 with StbiWrapper; use StbiWrapper.UCharPtr;
 
 with Ada.Integer_Text_IO;
@@ -6,6 +7,8 @@ with Ada.Integer_Text_IO;
 with Ada.Containers; use Ada.Containers;
 
 package body ImageIO is
+   package C renames Interfaces.C;
+
    function load(filename: C.Strings.chars_ptr) return PixelArray.ImagePlane
    is
       imageData: StbiWrapper.ImageData;
@@ -67,6 +70,16 @@ package body ImageIO is
          save_result := StbiWrapper.writePng(filename, C.int(image.width), C.int(image.height), 3, pxArray(pxArray'First)'Unchecked_Access, C.int(3 * image.width));
          return save_result = 1;
       end;
+   end save;
+
+   function load(filename: String) return PixelArray.ImagePlane is
+   begin
+      return load(C.Strings.New_String(filename));
+   end load;
+
+   function save(filename: String; image: PixelArray.ImagePlane) return Boolean is
+   begin
+      return save(C.Strings.New_String(filename), image);
    end save;
 
 end ImageIO;

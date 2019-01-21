@@ -6,14 +6,12 @@ with ImageThresholds;
 with Morphology;
 
 with Ada.Text_IO;
-
-with Interfaces.C.Strings;
 with Ada.Containers.Vectors;
 
 use Ada.Containers;
 
 package body ShapeDatabase is
-   function loadShape(cc: Character; path: Interfaces.C.Strings.chars_ptr) return CharacterDescriptor is
+   function loadShape(cc: Character; path: String) return CharacterDescriptor is
       result: CharacterDescriptor;
       image: PixelArray.ImagePlane;
       regions: ImageRegions.RegionVector.Vector;
@@ -41,17 +39,17 @@ package body ShapeDatabase is
    function init return DB is
       result: DB;
    begin
-      result.shapes.Append(loadShape('0', Interfaces.C.Strings.New_String("0.jpg")));
-      result.shapes.Append(loadShape('1', Interfaces.C.Strings.New_String("1.jpg")));
-      result.shapes.Append(loadShape('1', Interfaces.C.Strings.New_String("1_1.jpg")));
-      result.shapes.Append(loadShape('2', Interfaces.C.Strings.New_String("2.jpg")));
-      result.shapes.Append(loadShape('2', Interfaces.C.Strings.New_String("2_.jpg")));
-      result.shapes.Append(loadShape('3', Interfaces.C.Strings.New_String("3.jpg")));
-      result.shapes.Append(loadShape('4', Interfaces.C.Strings.New_String("4.jpg")));
+      result.shapes.Append(loadShape('0', "0.jpg"));
+      result.shapes.Append(loadShape('1', "1.jpg"));
+      result.shapes.Append(loadShape('1', "1_1.jpg"));
+      result.shapes.Append(loadShape('2', "2.jpg"));
+      result.shapes.Append(loadShape('2', "2_.jpg"));
+      result.shapes.Append(loadShape('3', "3.jpg"));
+      result.shapes.Append(loadShape('4', "4.jpg"));
 
-      result.shapes.Append(loadShape('7', Interfaces.C.Strings.New_String("7.jpg")));
-      result.shapes.Append(loadShape('8', Interfaces.C.Strings.New_String("8.jpg")));
-      result.shapes.Append(loadShape('9', Interfaces.C.Strings.New_String("9.jpg")));
+      result.shapes.Append(loadShape('7', "7.jpg"));
+      result.shapes.Append(loadShape('8', "8.jpg"));
+      result.shapes.Append(loadShape('9', "9.jpg"));
       return result;
    end init;
 

@@ -22,7 +22,7 @@ package body ShapeMatchingTests is
       return Format("Shape Matcher Tests");
    end Name;
 
-   function testShape(db: ShapeDatabase.DB; path: Interfaces.C.Strings.chars_ptr) return ShapeDatabase.MatchScore is
+   function testShape(db: ShapeDatabase.DB; path: String) return ShapeDatabase.MatchScore is
       image: PixelArray.ImagePlane;
       regions: ImageRegions.RegionVector.Vector;
    begin
@@ -46,7 +46,7 @@ package body ShapeMatchingTests is
       score: ShapeDatabase.MatchScore;
    begin
       db := ShapeDatabase.init;
-      score := testShape(db, Interfaces.C.Strings.New_Char_Array("1.jpg"));
+      score := testShape(db, "1.jpg");
       Assert(score.cc = '1', "test 1");
    end testBasicShapes;
 

@@ -54,21 +54,21 @@ begin
    begin
       MainTestSuite.runAll;
 
-      testImage := ImageIO.load(C.Strings.New_String(Ada.Command_Line.Argument(1)));
+      testImage := ImageIO.load(Ada.Command_Line.Argument(1));
       testImage := ImageFilters.gaussian(testImage, 7, 2.4);
 
-      saveOk := ImageIO.save(C.Strings.New_String("Input_filtered.png"), testImage);
+      saveOk := ImageIO.save("Input_filtered.png", testImage);
 
       -- threshold adaptative
       testImage := ImageThresholds.bernsenAdaptative(testImage,
                                                      radius => 10,
                                                      c_min  => 35);
-      saveOk := ImageIO.save(C.Strings.New_String("Input_threshold.png"), testImage);
+      saveOk := ImageIO.save("Input_threshold.png", testImage);
 
       -- apply morphology to strenghten shapes
       testImage := Morphology.erode(testImage, 7);
       testImage := Morphology.dilate(testImage, 7);
-      saveOk := ImageIO.save(C.Strings.New_String("Input_morphology.png"), testImage);
+      saveOk := ImageIO.save("Input_morphology.png", testImage);
 
       -- detect regions
       regions := ImageRegions.detectRegions(testImage);

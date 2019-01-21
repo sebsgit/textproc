@@ -11,4 +11,6 @@ package ImageTests is
    procedure testPixelArray(T : in out Test_Cases.Test_Case'Class);
 
    procedure testImageThresholding(T: in out Test_Cases.Test_Case'Class);
+
+   procedure testImageIO(T: in out Test_Cases.Test_Case'Class);
 end ImageTests;
