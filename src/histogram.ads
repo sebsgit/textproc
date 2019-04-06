@@ -11,5 +11,6 @@ package Histogram is
    procedure set(d: out Data; i: Natural; value: Float);
    function size(d: Data) return Natural;
    function sum(d: Data) return Float;
-   function normalize(d: Data) return Data;
+   function normalized(d: Data) return Data;
+   procedure normalize(d: in out Data);
 end Histogram;

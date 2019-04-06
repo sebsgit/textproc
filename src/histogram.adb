@@ -11,7 +11,7 @@ package body Histogram is
 
    procedure set(d: out Data; i:Natural; value: Float) is
    begin
-      d.bin(i) := value;
+      d.bin(i + 1) := value;
    end set;
 
    function size(d: Data) return Natural is
@@ -28,14 +28,24 @@ package body Histogram is
       return result;
    end sum;
 
-   function normalize(d: Data) return Data is
+   function normalized(d: Data) return Data is
       result: Data := createEmpty(d.size);
       total: Float := d.sum;
    begin
       for i in result.bin'Range loop
-         result.set(i, d.bin(i) / total);
+         result.bin(i) := d.bin(i) / total;
       end loop;
       return result;
+   end normalized;
+
+   procedure normalize(d: in out Data) is
+      total: Float := d.sum;
+   begin
+      if total /= 0.0 then
+         for i in d.bin'Range loop
+            d.bin(i) := d.bin(i) / total;
+         end loop;
+      end if;
    end normalize;
 
 end Histogram;
