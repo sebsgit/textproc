@@ -91,12 +91,12 @@ package body Histogram is
 
    function compare(d0, d1: Data; method: CompareMethod) return Float is
       result: Float := 0.0;
+      avg0: Float := d0.average;
+      avg1: Float := d1.average;
    begin
       case method is
          when Correlation =>
             declare
-               avg0: Float := d0.average;
-               avg1: Float := d1.average;
                a: Float := 0.0;
                b: Float := 0.0;
                c: Float := 0.0;
@@ -118,11 +118,30 @@ package body Histogram is
             end;
          when ChiSquare =>
             begin
-               null;
+               for i in d0.bin'Range loop
+                  if d0.bin(i) = 0.0 then
+                     result := result + d1.bin(i);
+                  else
+                     result := result + Float((d0.bin(i) - d1.bin(i)) * (d0.bin(i) - d1.bin(i))) / Float(d0.bin(i));
+                  end if;
+               end loop;
             end;
          when Bhattacharyya =>
+            declare
+               a: Float := 0.0;
             begin
-               null;
+               if avg0 = 0.0 and avg1 = 0.0 then
+                  result := 0.0;
+               elsif avg1 = 0.0 then
+                  result := 1.0;
+               elsif avg0 = 0.0 then
+                  result := 1.0;
+               else
+                  for i in d0.bin'Range loop
+                     a := a + Sqrt(d0.bin(i) * d1.bin(i));
+                  end loop;
+                  result := Sqrt(1.0 - a / Sqrt(avg1 * avg0 * Float(d0.size ** 2)));
+               end if;
             end;
       end case;
       return result;

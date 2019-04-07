@@ -142,24 +142,26 @@ package body HistogramTests is
    procedure testDistance(T: in out Test_Cases.Test_Case'Class) is
       h0, h1: Histogram.Data(5);
       dist, dist2: Float := 0.0;
+      method: Histogram.CompareMethod;
    begin
+      method := Histogram.Bhattacharyya;
       h0 := Histogram.createEmpty(5);
       h1 := Histogram.createEmpty(5);
-      dist := h0.compare(h1, Histogram.Correlation);
+      dist := h0.compare(h1, method);
       Assert(dist = 0.0, "compare id");
       h0.set(0, 1.0);
       h0.set(1, 2.0);
       h0.set(2, 3.0);
       h0.set(3, 4.0);
       h0.set(4, 5.0);
-      dist := h0.compare(h1, Histogram.Correlation);
+      dist := h0.compare(h1, method);
       Assert(dist > 0.0, "compare different");
       h1.set(0, 10.0);
       h1.set(1, 10.0);
       h1.set(2, 30.0);
       h1.set(3, 40.0);
       h1.set(4, 50.0);
-      dist2 := h0.compare(h1, Histogram.Correlation);
+      dist2 := h0.compare(h1, method);
       Assert(dist2 < dist, "similarity");
    end testDistance;
 
