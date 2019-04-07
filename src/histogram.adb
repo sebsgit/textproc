@@ -1,4 +1,5 @@
 with Ada.Numerics.Generic_Elementary_Functions;
+with Ada.Text_IO;
 
 package body Histogram is
 
@@ -146,5 +147,14 @@ package body Histogram is
       end case;
       return result;
    end compare;
+
+   procedure print(d: Data) is
+   begin
+      Ada.Text_IO.Put("[");
+      for i in 0 .. d.size - 2 loop
+         Ada.Text_IO.Put(Float(d.get(i))'Image & ", ");
+      end loop;
+      Ada.Text_IO.Put_Line(Float(d.get(d.size - 1))'Image & "]");
+   end print;
 
 end Histogram;

@@ -16,7 +16,8 @@ with ImageMoments;
 with ImageThresholds;
 with Morphology;
 with ImageFilters;
-
+with Histogram;
+with HistogramGenerator;
 with ShapeDatabase;
 
 with MainTestSuite;
@@ -126,6 +127,24 @@ begin
          end;
       end loop;
       Ada.Text_IO.Put_Line(Ada.Strings.Unbounded.To_String(finalResult));
+
+      for it in 0 .. Integer(regions.Length - 1) loop
+         Ada.Text_IO.Put_Line("-- histograms for region: " & it'Image);
+         declare
+            h0: Histogram.Data := HistogramGenerator.verticalProjection(testImage, regions.Element(it).area);
+            h1: Histogram.Data := HistogramGenerator.horizontalProjection(testImage, regions.Element(it).area);
+            h0_res: Histogram.Data(10);
+            h1_res: Histogram.Data(10);
+         begin
+            h0_res := h0.resized(10);
+            h1_res := h1.resized(10);
+            h0_res.normalize;
+            h1_res.normalize;
+            h0_res.print;
+            h1_res.print;
+            Ada.Text_IO.Put_Line("");
+         end;
+      end loop;
 
    end;
 

@@ -81,12 +81,12 @@ package body HistogramTests is
       r.width := 5;
       r.height := 5;
       image := PixelArray.allocate(width  => r.width, height => r.height);
-      image.set(Pixel(0));
-      image.set(2, 0, 255);
-      image.set(2, 1, 255);
-      image.set(2, 2, 255);
-      image.set(2, 3, 255);
-      image.set(2, 4, 255);
+      image.set(Pixel(255));
+      image.set(2, 0, 0);
+      image.set(2, 1, 0);
+      image.set(2, 2, 0);
+      image.set(2, 3, 0);
+      image.set(2, 4, 0);
       -- horizontal and vertical projections of a straight vertical line
       declare
          hist: Histogram.Data := HistogramGenerator.horizontalProjection(image, r);
@@ -110,12 +110,12 @@ package body HistogramTests is
       end;
 
       -- projections of y = x
-      image.set(Pixel(0));
-      image.set(0, 0, 255);
-      image.set(1, 1, 255);
-      image.set(2, 2, 255);
-      image.set(3, 3, 255);
-      image.set(4, 4, 255);
+      image.set(Pixel(255));
+      image.set(0, 0, 0);
+      image.set(1, 1, 0);
+      image.set(2, 2, 0);
+      image.set(3, 3, 0);
+      image.set(4, 4, 0);
 
       declare
          hist: Histogram.Data := HistogramGenerator.horizontalProjection(image, r);

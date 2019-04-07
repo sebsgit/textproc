@@ -64,7 +64,7 @@ package body ShapeDatabase is
       result.score := 99999.0;
       regionDescriptor := ImageMoments.calculateMoments(image, region);
       tmpScore := ImageMoments.orientationAngle(image, region);
-      Ada.Text_IO.Put_Line("orient: " & tmpScore'Image);
+      -- Ada.Text_IO.Put_Line("orient: " & tmpScore'Image);
       for i in 0 .. Integer(database.shapes.Length - 1) loop
          d1 := ImageMoments.match_I1(regionDescriptor, database.shapes.Element(i).d.moments);
          d2 := ImageMoments.match_I2(regionDescriptor, database.shapes.Element(i).d.moments);
@@ -73,7 +73,7 @@ package body ShapeDatabase is
          tmpScore := d4;
          tmp := database.shapes.Element(i).c;
 
-         Ada.Text_IO.Put_Line("match with " & tmp'Image & " => " & tmpScore'Image);
+         --  Ada.Text_IO.Put_Line("match with " & tmp'Image & " => " & tmpScore'Image);
          if tmpScore < result.score then
             result.score := tmpScore;
             result.cc := tmp;

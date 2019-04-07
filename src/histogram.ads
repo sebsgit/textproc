@@ -40,4 +40,6 @@ package Histogram is
      with
        Pre => d0.size = d1.size;
 
+   procedure print(d: Data);
+
 end Histogram;
