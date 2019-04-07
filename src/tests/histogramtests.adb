@@ -28,6 +28,7 @@ package body HistogramTests is
       d.set(2, 3.0);
       d.set(3, 2.0);
       d.set(4, 1.0);
+      Assert(d.get(3) = 2.0, "get");
       Assert(d.sum = 15.0, "test sum");
       d1 := d.normalized;
       Assert(d1.sum = 1.0, "test normalized sum");

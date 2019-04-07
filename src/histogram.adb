@@ -1,6 +1,6 @@
 package body Histogram is
 
-   function createEmpty(size: Natural) return Data is
+   function createEmpty(size: Positive) return Data is
       result: Data(size);
    begin
       for i in result.bin'Range loop
@@ -13,6 +13,11 @@ package body Histogram is
    begin
       d.bin(i + 1) := value;
    end set;
+
+   function get(d: Data; i: Natural) return Float is
+   begin
+      return d.bin(i + 1);
+   end get;
 
    function size(d: Data) return Natural is
    begin
