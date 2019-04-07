@@ -210,7 +210,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 28" line=" 7" >
+    <file_marker column=" 4" line=" 7" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
@@ -230,15 +230,15 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 42" line=" 12" >
+    <file_marker column=" 15" line=" 12" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 13" line=" 20" >
+    <file_marker column=" 12" line=" 20" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -246,7 +246,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -258,7 +258,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -270,11 +270,11 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 51" line=" 10" >
+    <file_marker column=" 47" line=" 10" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -282,7 +282,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -290,7 +290,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -306,7 +306,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 51" line=" 10" >
+    <file_marker column=" 47" line=" 10" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
@@ -314,7 +314,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 51" line=" 10" >
+    <file_marker column=" 47" line=" 10" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
@@ -326,7 +326,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -338,7 +338,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -350,23 +350,23 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 39" line=" 13" >
+    <file_marker column=" 1" line=" 13" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 38" line=" 26" >
+    <file_marker column=" 1" line=" 26" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 38" line=" 26" >
+    <file_marker column=" 1" line=" 26" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -374,11 +374,11 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 27" line=" 23" >
+    <file_marker column=" 9" line=" 23" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -386,7 +386,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -398,11 +398,11 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 57" line=" 11" >
+    <file_marker column=" 28" line=" 11" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -410,7 +410,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -426,7 +426,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -434,7 +434,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -466,7 +466,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -482,39 +482,39 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 18" line=" 39" >
+    <file_marker column=" 9" line=" 39" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 1" line=" 40" >
+    <file_marker column=" 4" line=" 40" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 23" line=" 33" >
+    <file_marker column=" 21" line=" 33" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 29" line=" 33" >
+    <file_marker column=" 21" line=" 33" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -522,7 +522,7 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 15" line=" 41" >
+    <file_marker column=" 17" line=" 41" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
@@ -530,15 +530,15 @@
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
       <vfs_file>D:\projects\repos\textproc\src\histogram.adb</vfs_file>
     </file_marker>
-    <file_marker column=" 1" line=" 54" >
+    <file_marker column=" 17" line=" 2" >
       <vfs_project>D:\projects\repos\textproc\textprocs.gpr</vfs_project>
-      <vfs_file>D:\projects\repos\textproc\src\tests\shapematchingtests.adb</vfs_file>
+      <vfs_file>D:\projects\repos\textproc\src\histogramgenerator.ads</vfs_file>
     </file_marker>
-    <file_marker column=" 9" line=" 28" >
+    <file_marker column=" 25" line=" 2" >
       <vfs_project />
       <vfs_file />
     </file_marker>
-    <file_marker current="true" column=" 18" line=" 27" >
+    <file_marker current="true" column=" 24" line=" 2" >
       <vfs_project />
       <vfs_file>\Untitled</vfs_file>
     </file_marker>

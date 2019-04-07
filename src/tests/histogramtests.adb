@@ -3,7 +3,12 @@ with Interfaces.C.Strings;
 with Ada.Text_IO;
 
 with ImageIO;
+with PixelArray;
+with ImageRegions;
 with Histogram;
+with HistogramGenerator;
+
+use PixelArray;
 
 package body HistogramTests is
 
@@ -12,6 +17,7 @@ package body HistogramTests is
    begin
       Register_Routine (T, testBasicHistograms'Access, "basic histograms");
       Register_Routine (T, testRescale'Access, "resizing histograms");
+      Register_Routine (T, testProjections'Access, "projecting images");
    end Register_Tests;
 
    function Name(T: TestCase) return Test_String is
@@ -63,5 +69,72 @@ package body HistogramTests is
       Assert(d.get(1) < resized.get(0) and d.get(1) > resized.get(2), "1");
       Assert(d.get(2) = resized.get(3), "2");
    end testRescale;
+
+   procedure testProjections(T: in out Test_Cases.Test_Case'Class) is
+      image: PixelArray.ImagePlane;
+      r: ImageRegions.Rect;
+   begin
+      r.x := 0;
+      r.y := 0;
+      r.width := 5;
+      r.height := 5;
+      image := PixelArray.allocate(width  => r.width, height => r.height);
+      image.set(Pixel(0));
+      image.set(2, 0, 255);
+      image.set(2, 1, 255);
+      image.set(2, 2, 255);
+      image.set(2, 3, 255);
+      image.set(2, 4, 255);
+      -- horizontal and vertical projections of a straight vertical line
+      declare
+         hist: Histogram.Data := HistogramGenerator.horizontalProjection(image, r);
+      begin
+         Assert(hist.size = r.width, "hist w");
+         Assert(hist.sum = 5.0, "hist sum");
+         Assert(hist.get(0) = 0.0, "hist 0");
+         Assert(hist.get(1) = 0.0, "hist 1");
+         Assert(hist.get(2) = 5.0, "hist 2");
+         Assert(hist.get(3) = 0.0, "hist 3");
+         Assert(hist.get(4) = 0.0, "hist 4");
+
+         hist := HistogramGenerator.verticalProjection(image, r);
+         Assert(hist.size = r.height, "hist w");
+         Assert(hist.sum = 5.0, "hist sum");
+         Assert(hist.get(0) = 1.0, "hist 0");
+         Assert(hist.get(1) = 1.0, "hist 1");
+         Assert(hist.get(2) = 1.0, "hist 2");
+         Assert(hist.get(3) = 1.0, "hist 3");
+         Assert(hist.get(4) = 1.0, "hist 4");
+      end;
+
+      -- projections of y = x
+      image.set(Pixel(0));
+      image.set(0, 0, 255);
+      image.set(1, 1, 255);
+      image.set(2, 2, 255);
+      image.set(3, 3, 255);
+      image.set(4, 4, 255);
+
+      declare
+         hist: Histogram.Data := HistogramGenerator.horizontalProjection(image, r);
+      begin
+         Assert(hist.size = r.width, "hist w");
+         Assert(hist.sum = 5.0, "hist sum");
+         Assert(hist.get(0) = 1.0, "hist 0");
+         Assert(hist.get(1) = 1.0, "hist 1");
+         Assert(hist.get(2) = 1.0, "hist 2");
+         Assert(hist.get(3) = 1.0, "hist 3");
+         Assert(hist.get(4) = 1.0, "hist 4");
+
+         hist := HistogramGenerator.verticalProjection(image, r);
+         Assert(hist.size = r.height, "hist w");
+         Assert(hist.sum = 5.0, "hist sum");
+         Assert(hist.get(0) = 1.0, "hist 0");
+         Assert(hist.get(1) = 1.0, "hist 1");
+         Assert(hist.get(2) = 1.0, "hist 2");
+         Assert(hist.get(3) = 1.0, "hist 3");
+         Assert(hist.get(4) = 1.0, "hist 4");
+      end;
+   end testProjections;
 
 end HistogramTests;
