@@ -26,15 +26,7 @@ package body ShapeMatchingTests is
       image: PixelArray.ImagePlane;
       regions: ImageRegions.RegionVector.Vector;
    begin
-      image := ImageIO.load(path);
-      -- threshold adaptative
-      image := ImageThresholds.bernsenAdaptative(image,
-                                                 radius => 10,
-                                                 c_min  => 35);
-      -- apply morphology to strenghten shapes
-      image := Morphology.erode(image, 7);
-      image := Morphology.dilate(image, 7);
-
+      image := ShapeDatabase.preprocess(ImageIO.load(path));
       -- detect regions
       regions := ImageRegions.detectRegions(image);
 

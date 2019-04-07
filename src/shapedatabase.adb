@@ -2,6 +2,7 @@ with PixelArray;
 with ImageIO;
 with ImageRegions;
 with ImageMoments;
+with ImageFilters;
 with ImageThresholds;
 with Morphology;
 
@@ -11,6 +12,21 @@ with Ada.Containers.Vectors;
 use Ada.Containers;
 
 package body ShapeDatabase is
+
+   function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane is
+      result: PixelArray.ImagePlane;
+   begin
+      result := ImageFilters.gaussian(image, 7, 2.4);
+      -- threshold adaptative
+      result := ImageThresholds.bernsenAdaptative(result,
+                                                  radius => 10,
+                                                  c_min  => 35);
+      -- apply morphology to strenghten shapes
+      result := Morphology.erode(result, 7);
+      result := Morphology.dilate(result, 7);
+      return result;
+   end preprocess;
+
    function loadShape(cc: Character; path: String) return CharacterDescriptor is
       result: CharacterDescriptor;
       image: PixelArray.ImagePlane;
@@ -18,15 +34,7 @@ package body ShapeDatabase is
    begin
       result.c := cc;
 
-      image := ImageIO.load(path);
-      -- threshold adaptative
-      image := ImageThresholds.bernsenAdaptative(image,
-                                                 radius => 10,
-                                                 c_min  => 35);
-      -- apply morphology to strenghten shapes
-      image := Morphology.erode(image, 7);
-      image := Morphology.dilate(image, 7);
-
+      image := preprocess(ImageIO.load(path));
       -- detect regions
       regions := ImageRegions.detectRegions(image);
 

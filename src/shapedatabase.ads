@@ -7,6 +7,10 @@ with Morphology;
 with Ada.Containers.Vectors;
 
 package ShapeDatabase is
+   pragma Assertion_Policy (Pre => Check,
+                            Post => Check,
+                            Type_Invariant => Check);
+
    type Descriptor is tagged record
       moments: ImageMoments.HuMoments;
       orientation: Float;
@@ -30,6 +34,9 @@ package ShapeDatabase is
       cc: Character;
       score: Float;
    end record;
+
+   function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane
+     with Post => ImageThresholds.isBinary(preprocess'Result);
 
    function init return DB;
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore;

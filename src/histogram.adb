@@ -1,4 +1,5 @@
 with Ada.Numerics.Generic_Elementary_Functions;
+with Ada.Exceptions;
 with Ada.Text_IO;
 
 package body Histogram is
@@ -141,8 +142,16 @@ package body Histogram is
                   for i in d0.bin'Range loop
                      a := a + Sqrt(d0.bin(i) * d1.bin(i));
                   end loop;
-                  result := Sqrt(1.0 - a / Sqrt(avg1 * avg0 * Float(d0.size ** 2)));
+                  a := a / Sqrt(avg1 * avg0 * Float(d0.size ** 2));
+                  if a > 1.0 then
+                     a := 1.0;
+                  end if;
+                  result := Sqrt(1.0 - a);
                end if;
+            exception
+               when exc: Ada.Numerics.Argument_Error =>
+                  --
+                  raise;
             end;
       end case;
       return result;

@@ -145,7 +145,6 @@ begin
             h1_res := h1.resized(h1_res.size);
             h0_res.normalize;
             h1_res.normalize;
-            Ada.Text_IO.Put_Line("");
             for j in 0 .. Integer(regions.Length - 1) loop
                if j /= it then
                   declare
@@ -158,10 +157,8 @@ begin
                   begin
                      h0_j_res := h0_j.resized(h0_res.size);
                      h1_j_res := h1_j.resized(h1_res.size);
-                     h0_j_res.normalize;
-                     h1_j_res.normalize;
-                     dd1 := h0_res.compare(h0_j_res, method);
-                     dd2 := h1_res.compare(h1_j_res, method);
+                     dd1 := h0_res.compare(h0_j_res.normalized, method);
+                     dd2 := h1_res.compare(h1_j_res.normalized, method);
                      if dd1 < h0_best then
                         h0_best := dd1;
                         h0_id := j;
