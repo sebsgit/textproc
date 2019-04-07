@@ -1,4 +1,9 @@
+with Ada.Numerics.Generic_Elementary_Functions;
+
 package body Histogram is
+
+   package Float_Functions is new Ada.Numerics.Generic_Elementary_Functions(Float);
+   use Float_Functions;
 
    function createEmpty(size: Positive) return Data is
       result: Data(size);
@@ -32,6 +37,11 @@ package body Histogram is
       end loop;
       return result;
    end sum;
+
+   function average(d: Data) return Float is
+   begin
+      return d.sum / Float(d.size);
+   end average;
 
    function normalized(d: Data) return Data is
       result: Data := createEmpty(d.size);
@@ -78,5 +88,44 @@ package body Histogram is
       end loop;
       return result;
    end resized;
+
+   function compare(d0, d1: Data; method: CompareMethod) return Float is
+      result: Float := 0.0;
+   begin
+      case method is
+         when Correlation =>
+            declare
+               avg0: Float := d0.average;
+               avg1: Float := d1.average;
+               a: Float := 0.0;
+               b: Float := 0.0;
+               c: Float := 0.0;
+            begin
+               for i in d0.bin'Range loop
+                  a := a + (d0.bin(i) - avg0) * (d1.bin(i) - avg1);
+                  b := b + (d0.bin(i) - avg0) ** 2;
+                  c := c + (d1.bin(i) - avg1) ** 2;
+               end loop;
+               if b = 0.0 and c = 0.0 then
+                  result := 0.0;
+               elsif b = 0.0 then
+                  result := c;
+               elsif c = 0.0 then
+                  result := b;
+               else
+                  result := a / Sqrt(b * c);
+               end if;
+            end;
+         when ChiSquare =>
+            begin
+               null;
+            end;
+         when Bhattacharyya =>
+            begin
+               null;
+            end;
+      end case;
+      return result;
+   end compare;
 
 end Histogram;

@@ -18,6 +18,7 @@ package body HistogramTests is
       Register_Routine (T, testBasicHistograms'Access, "basic histograms");
       Register_Routine (T, testRescale'Access, "resizing histograms");
       Register_Routine (T, testProjections'Access, "projecting images");
+      Register_Routine (T, testDistance'Access, "histogram distances");
    end Register_Tests;
 
    function Name(T: TestCase) return Test_String is
@@ -38,6 +39,7 @@ package body HistogramTests is
       d.set(4, 1.0);
       Assert(d.get(3) = 2.0, "get");
       Assert(d.sum = 15.0, "test sum");
+      Assert(d.average = 3.0, "avg");
       d1 := d.normalized;
       Assert(d1.sum = 1.0, "test normalized sum");
       Assert(d.sum = 15.0, "control sum");
@@ -136,5 +138,29 @@ package body HistogramTests is
          Assert(hist.get(4) = 1.0, "hist 4");
       end;
    end testProjections;
+
+   procedure testDistance(T: in out Test_Cases.Test_Case'Class) is
+      h0, h1: Histogram.Data(5);
+      dist, dist2: Float := 0.0;
+   begin
+      h0 := Histogram.createEmpty(5);
+      h1 := Histogram.createEmpty(5);
+      dist := h0.compare(h1, Histogram.Correlation);
+      Assert(dist = 0.0, "compare id");
+      h0.set(0, 1.0);
+      h0.set(1, 2.0);
+      h0.set(2, 3.0);
+      h0.set(3, 4.0);
+      h0.set(4, 5.0);
+      dist := h0.compare(h1, Histogram.Correlation);
+      Assert(dist > 0.0, "compare different");
+      h1.set(0, 10.0);
+      h1.set(1, 10.0);
+      h1.set(2, 30.0);
+      h1.set(3, 40.0);
+      h1.set(4, 50.0);
+      dist2 := h0.compare(h1, Histogram.Correlation);
+      Assert(dist2 < dist, "similarity");
+   end testDistance;
 
 end HistogramTests;
