@@ -22,4 +22,6 @@ package Histogram is
    function normalized(d: Data) return Data
      with Post => (normalized'Result.size = d.size);
    procedure normalize(d: in out Data);
+   function resized(d: Data; size: Positive) return Data
+     with Post => resized'Result.size = size;
 end Histogram;

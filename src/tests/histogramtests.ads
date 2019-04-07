@@ -9,4 +9,5 @@ package HistogramTests is
    function Name(T: TestCase) return Message_String;
 
    procedure testBasicHistograms(T : in out Test_Cases.Test_Case'Class);
+   procedure testRescale(T : in out Test_Cases.Test_Case'Class);
 end HistogramTests;

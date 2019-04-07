@@ -53,4 +53,30 @@ package body Histogram is
       end if;
    end normalize;
 
+   function resized(d: Data; size: Positive) return Data is
+      result: Data(size);
+      scale: Float;
+   begin
+      if d.size = size then
+         return d;
+      end if;
+      result := createEmpty(size);
+      result.set(0, d.get(0));
+      result.set(result.size - 1, d.get(d.size - 1));
+      scale := Float(d.size - 1) / Float(size - 1);
+      for i in 1 .. result.size - 2 loop
+         declare
+            newCoord: Float := scale * Float(i);
+            x0: Float := Float'Floor(newCoord);
+            x1: Float := x0 + 1.0;
+            weight0: Float := 1.0 - (newCoord - x0);
+            weight1: Float := 1.0 - weight0;
+            total: Float := weight0 * d.get(Natural(x0)) + weight1 * d.get(Natural(x1));
+         begin
+            result.set(i, total);
+         end;
+      end loop;
+      return result;
+   end resized;
+
 end Histogram;
