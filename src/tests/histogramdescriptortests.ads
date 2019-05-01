@@ -9,4 +9,5 @@ package HistogramDescriptorTests is
    function Name(T: TestCase) return Message_String;
 
    procedure testBasicDescriptor(T : in out Test_Cases.Test_Case'Class);
+   procedure testDivergence(T : in out Test_Cases.Test_Case'Class);
 end HistogramDescriptorTests;

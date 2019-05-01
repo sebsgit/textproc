@@ -20,6 +20,7 @@ package body HistogramDescriptorTests is
       use AUnit.Test_Cases.Registration;
    begin
       Register_Routine (T, testBasicDescriptor'Access, "basic descriptor");
+      Register_Routine (T, testDivergence'Access, "divergence");
    end Register_Tests;
 
    function Name(T: TestCase) return Test_String is
@@ -54,5 +55,26 @@ package body HistogramDescriptorTests is
       distance := Histogram.compare(d0.vertical, d1.horizontal, Histogram.Bhattacharyya);
       Assert(distance > 0.2, "vertical != horizontal");
    end testBasicDescriptor;
+
+   procedure testDivergence(T : in out Test_Cases.Test_Case'Class) is
+      h0, h1: Histogram.Data(3);
+      result: Float;
+   begin
+      h0.set(0, 0.36);
+      h0.set(1, 0.48);
+      h0.set(2, 0.16);
+      h1.set(0, 0.333);
+      h1.set(1, 0.333);
+      h1.set(2, 0.333);
+
+      result := HistogramDescriptor.computeDivergence(h0, h1, HistogramDescriptor.KullbackLeibler);
+      Assert(abs (result - 0.0863) < 0.001, "D(P||Q)");
+
+      result := HistogramDescriptor.computeDivergence(h1, h0, HistogramDescriptor.KullbackLeibler);
+      Assert(abs (result - 0.0964) < 0.001, "D(Q||P)");
+
+      result := HistogramDescriptor.computeDivergence(h0, h1, HistogramDescriptor.JensennShannon);
+      Assert(result /= 0.0, "JSD(P||Q)");
+   end testDivergence;
 
 end HistogramDescriptorTests;
