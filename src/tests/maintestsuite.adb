@@ -4,6 +4,7 @@ with AUnit.Reporter.Text;
 with ImageTests;
 with ShapeMatchingTests;
 with HistogramTests;
+with HistogramDescriptorTests;
 
 package body MainTestSuite is
    use AUnit.Test_Suites;
@@ -13,12 +14,14 @@ package body MainTestSuite is
    imageTestCase: aliased ImageTests.ImageTest;
    shapeTestCase: aliased ShapeMatchingTests.TestCase;
    histogramTestCase: aliased HistogramTests.TestCase;
+   histogramDescriptorTestCase: aliased HistogramDescriptorTests.TestCase;
 
    function Suite return Access_Test_Suite is
    begin
       Add_Test(suiteObject'Access, imageTestCase'Access);
       Add_Test(suiteObject'Access, shapeTestCase'Access);
       Add_Test(suiteObject'Access, histogramTestCase'Access);
+      Add_Test(suiteObject'Access, histogramDescriptorTestCase'Access);
       return suiteObject'Access;
    end Suite;
 

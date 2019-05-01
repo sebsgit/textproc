@@ -13,7 +13,7 @@ package body HistogramGenerator is
             total: Float := 0.0;
          begin
             for w in 0 .. r.width - 1 loop
-               if image.get(r.x + w, r.y + h) /= 255 then
+               if image.get(r.x + w, r.y + h) /= PixelArray.Background then
                   total := total + 1.0;
                end if;
             end loop;
@@ -28,7 +28,7 @@ package body HistogramGenerator is
    begin
       for h in 0 .. r.height - 1 loop
          for w in 0 .. r.width - 1 loop
-            if image.get(r.x + w, r.y + h) /= 255 then
+            if image.get(r.x + w, r.y + h) /= PixelArray.Background then
                result.set(w, result.get(w) + 1.0);
             end if;
          end loop;

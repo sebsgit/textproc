@@ -47,19 +47,24 @@ package body ShapeDatabase is
    function init return DB is
       result: DB;
    begin
-      result.shapes.Append(loadShape('0', "0.jpg"));
-      result.shapes.Append(loadShape('1', "1.jpg"));
-      result.shapes.Append(loadShape('1', "1_1.jpg"));
-      result.shapes.Append(loadShape('2', "2.jpg"));
-      result.shapes.Append(loadShape('2', "2_.jpg"));
-      result.shapes.Append(loadShape('3', "3.jpg"));
-      result.shapes.Append(loadShape('4', "4.jpg"));
+      result.add(loadShape('0', "0.jpg"));
+      result.add(loadShape('1', "1.jpg"));
+      result.add(loadShape('1', "1_1.jpg"));
+      result.add(loadShape('2', "2.jpg"));
+      result.add(loadShape('2', "2_.jpg"));
+      result.add(loadShape('3', "3.jpg"));
+      result.add(loadShape('4', "4.jpg"));
 
-      result.shapes.Append(loadShape('7', "7.jpg"));
-      result.shapes.Append(loadShape('8', "8.jpg"));
-      result.shapes.Append(loadShape('9', "9.jpg"));
+      result.add(loadShape('7', "7.jpg"));
+      result.add(loadShape('8', "8.jpg"));
+      result.add(loadShape('9', "9.jpg"));
       return result;
    end init;
+
+   procedure add(database: in out DB; desc: CharacterDescriptor) is
+   begin
+      database.shapes.Append(desc);
+   end add;
 
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore is
       result: MatchScore;

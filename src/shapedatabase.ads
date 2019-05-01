@@ -16,7 +16,7 @@ package ShapeDatabase is
       orientation: Float;
    end record;
 
-   type CharacterDescriptor is tagged record
+   type CharacterDescriptor is record
       c: Character;
       d: Descriptor;
    end record;
@@ -40,4 +40,5 @@ package ShapeDatabase is
 
    function init return DB;
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore;
+   procedure add(database: in out DB; desc: CharacterDescriptor);
 end ShapeDatabase;

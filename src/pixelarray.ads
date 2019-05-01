@@ -11,6 +11,8 @@ package PixelArray is
 
    type PixelData is array (Natural range <>) of Pixel;
 
+   Background: Pixel := 255;
+
    type ImagePlane is tagged record
       data: PixelVector.Vector;
       width_d, height_d: Natural := 0;
