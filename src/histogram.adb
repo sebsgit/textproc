@@ -91,6 +91,22 @@ package body Histogram is
       return result;
    end resized;
 
+   procedure multiply(d: in out Data; value: Float) is
+   begin
+      for i in 0 .. d.size - 1 loop
+         d.set(i, d.get(i) * value);
+      end loop;
+   end multiply;
+
+   function multiplied(d: Data; value: Float) return Data is
+      result: Data(d.size);
+   begin
+      for i in 0 .. d.size - 1 loop
+         result.set(i, d.get(i) * value);
+      end loop;
+      return result;
+   end multiplied;
+
    function compare(d0, d1: Data; method: CompareMethod) return Float is
       result: Float := 0.0;
       avg0: Float := d0.average;
@@ -156,6 +172,15 @@ package body Histogram is
       end case;
       return result;
    end compare;
+
+   function add(d0, d1: Data) return Data is
+      result: Data(d0.size);
+   begin
+      for i in 0 .. d0.size - 1 loop
+         result.set(i, d0.get(i) + d1.get(i));
+      end loop;
+      return result;
+   end add;
 
    procedure print(d: Data) is
    begin

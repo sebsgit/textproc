@@ -10,6 +10,7 @@ package HistogramTests is
 
    procedure testBasicHistograms(T : in out Test_Cases.Test_Case'Class);
    procedure testRescale(T : in out Test_Cases.Test_Case'Class);
+   procedure testMultiplication(T: in out Test_Cases.Test_Case'Class);
    procedure testProjections(T : in out Test_Cases.Test_Case'Class);
    procedure testDistance(T : in out Test_Cases.Test_Case'Class);
 end HistogramTests;

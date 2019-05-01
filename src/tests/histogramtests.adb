@@ -17,6 +17,7 @@ package body HistogramTests is
    begin
       Register_Routine (T, testBasicHistograms'Access, "basic histograms");
       Register_Routine (T, testRescale'Access, "resizing histograms");
+      Register_Routine (T, testMultiplication'Access, "multiplication");
       Register_Routine (T, testProjections'Access, "projecting images");
       Register_Routine (T, testDistance'Access, "histogram distances");
    end Register_Tests;
@@ -71,6 +72,23 @@ package body HistogramTests is
       Assert(d.get(1) < resized.get(0) and d.get(1) > resized.get(2), "1");
       Assert(d.get(2) = resized.get(3), "2");
    end testRescale;
+
+   procedure testMultiplication(T: in out Test_Cases.Test_Case'Class) is
+      h0, h1: Histogram.Data(3);
+   begin
+      h0.set(0, 1.0);
+      h0.set(1, 2.0);
+      h0.set(2, 3.0);
+      h1 := h0;
+      h1.multiply(1.5);
+      Assert(h1.get(0) = 1.5, "0");
+      Assert(h1.get(1) = 3.0, "1");
+      Assert(h1.get(2) = 4.5, "2");
+      Assert(h1.compare(h0, Histogram.ChiSquare) /= 0.0, "distance not equal");
+      Assert(h1.compare(h0.multiplied(1.5), Histogram.ChiSquare) = 0.0, "distance equal");
+      h1 := h0.add(h0);
+      Assert(h1.compare(h0.multiplied(2.0), Histogram.ChiSquare) = 0.0, "distance equal");
+   end testMultiplication;
 
    procedure testProjections(T: in out Test_Cases.Test_Case'Class) is
       image: PixelArray.ImagePlane;
