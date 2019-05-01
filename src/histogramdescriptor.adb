@@ -32,14 +32,17 @@ package body HistogramDescriptor is
    end kld;
 
    function jsd(h0, h1: Histogram.Data) return Float is
+      m: Histogram.Data(h0.size);
    begin
-      return 0.0;
+      m := h0.add(h1);
+      m.multiply(0.5);
+      return 0.5 * kld(h0, m) + 0.5 * kld(h1, m);
    end jsd;
 
    function computeDivergence(h0, h1: Histogram.Data; method: Divergence) return Float is
    begin
       case method is
-         when JensennShannon =>
+         when JensenShannon =>
             return jsd(h0, h1);
          when KullbackLeibler =>
             return kld(h0, h1);

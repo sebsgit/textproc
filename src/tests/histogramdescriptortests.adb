@@ -73,8 +73,14 @@ package body HistogramDescriptorTests is
       result := HistogramDescriptor.computeDivergence(h1, h0, HistogramDescriptor.KullbackLeibler);
       Assert(abs (result - 0.0964) < 0.001, "D(Q||P)");
 
-      result := HistogramDescriptor.computeDivergence(h0, h1, HistogramDescriptor.JensennShannon);
-      Assert(result /= 0.0, "JSD(P||Q)");
+      result := HistogramDescriptor.computeDivergence(h0, h1, HistogramDescriptor.JensenShannon);
+      Assert(abs (result - 0.0224) < 0.001, "JSD(P||Q)");
+      declare
+         resulth1h0: Float;
+      begin
+         resulth1h0 := HistogramDescriptor.computeDivergence(h1, h0, HistogramDescriptor.JensenShannon);
+         Assert(result = resulth1h0, "JSD symmetry");
+      end;
    end testDivergence;
 
 end HistogramDescriptorTests;

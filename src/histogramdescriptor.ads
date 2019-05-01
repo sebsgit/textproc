@@ -9,7 +9,7 @@ package HistogramDescriptor is
 
    BinCount: Natural := 20;
 
-   type Divergence is (JensennShannon, KullbackLeibler);
+   type Divergence is (JensenShannon, KullbackLeibler);
 
    type Data is tagged record
       horizontal: Histogram.Data(BinCount);
