@@ -8,6 +8,7 @@ with Morphology;
 
 with Ada.Text_IO;
 with Ada.Containers.Vectors;
+with Ada.Strings.Fixed; use Ada.Strings.Fixed;
 
 use Ada.Containers;
 
@@ -27,6 +28,14 @@ package body ShapeDatabase is
       return result;
    end preprocess;
 
+   function processRegion(image: PixelArray.ImagePlane; rect: ImageRegions.Region) return Descriptor is
+      result: Descriptor;
+   begin
+      result.moments := ImageMoments.calculateMoments(image, rect);
+      result.orientation := ImageMoments.orientationAngle(image, rect);
+      return result;
+   end processRegion;
+
    function loadShape(cc: Character; path: String) return CharacterDescriptor is
       result: CharacterDescriptor;
       image: PixelArray.ImagePlane;
@@ -38,14 +47,14 @@ package body ShapeDatabase is
       -- detect regions
       regions := ImageRegions.detectRegions(image);
 
-      result.d.moments := ImageMoments.calculateMoments(image, regions.First_Element);
-      result.d.orientation := ImageMoments.orientationAngle(image, regions.First_Element);
+      result.d := processRegion(image, regions.First_Element);
 
       return result;
    end loadShape;
 
    function init return DB is
       result: DB;
+      reg: ShapeVector.Vector;
    begin
       result.add(loadShape('0', "0.jpg"));
       result.add(loadShape('1', "1.jpg"));
@@ -58,6 +67,12 @@ package body ShapeDatabase is
       result.add(loadShape('7', "7.jpg"));
       result.add(loadShape('8', "8.jpg"));
       result.add(loadShape('9', "9.jpg"));
+
+      reg := loadShapes("20180501.1.jpg");
+      for d in 0 .. reg.Length - 1 loop
+         result.add(reg(Integer(d)));
+      end loop;
+
       return result;
    end init;
 
@@ -94,5 +109,29 @@ package body ShapeDatabase is
       end loop;
       return result;
    end match;
+
+   function loadShapes(imagePath: String) return ShapeVector.Vector is
+      result: ShapeVector.Vector;
+      image: PixelArray.ImagePlane;
+      r: ImageRegions.RegionVector.Vector;
+      dotPosition: Integer := -1;
+   begin
+      image := preprocess(ImageIO.load(imagePath));
+      dotPosition := Index(imagePath, ".");
+      r := ImageRegions.detectRegions(image);
+      if Integer(r.Length) /= dotPosition -1 then
+         raise Capacity_Error with imagePath & ": processing error";
+      end if;
+      for i in 0 .. r.Length - 1 loop
+         declare
+            desc: CharacterDescriptor;
+         begin
+            desc.c := imagePath(Integer(i + 1));
+            desc.d := processRegion(image, r(Integer(i)));
+            result.Append(desc);
+         end;
+      end loop;
+      return result;
+   end loadShapes;
 
 end ShapeDatabase;

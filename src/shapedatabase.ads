@@ -41,4 +41,7 @@ package ShapeDatabase is
    function init return DB;
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore;
    procedure add(database: in out DB; desc: CharacterDescriptor);
+
+   function loadShapes(imagePath: String) return ShapeVector.Vector;
+
 end ShapeDatabase;
