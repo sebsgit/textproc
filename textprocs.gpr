@@ -14,5 +14,9 @@ project TextProcs is
       for Switches ("ada") use ("-j4", "-C", "-s");
    end Builder;
 
+   package Compiler is
+      for Switches ("ada") use ("-fPIC", "-O");
+   end Compiler;
+
 end TextProcs;
 

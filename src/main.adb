@@ -54,6 +54,7 @@ begin
                                                               Swap => regionSwap);
    begin
       MainTestSuite.runAll;
+      return ;
 
       testImage := ImageIO.load(Ada.Command_Line.Argument(1));
       testImage := ImageFilters.gaussian(testImage, 7, 2.4);

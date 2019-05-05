@@ -3,6 +3,7 @@ with AUnit.Reporter.Text;
 
 with ImageTests;
 with ShapeMatchingTests;
+with ShapeDatabaseTest;
 with HistogramTests;
 with HistogramDescriptorTests;
 
@@ -15,6 +16,7 @@ package body MainTestSuite is
    shapeTestCase: aliased ShapeMatchingTests.TestCase;
    histogramTestCase: aliased HistogramTests.TestCase;
    histogramDescriptorTestCase: aliased HistogramDescriptorTests.TestCase;
+   shapeDbTests: aliased ShapeDatabaseTest.TestCase;
 
    function Suite return Access_Test_Suite is
    begin
@@ -22,6 +24,7 @@ package body MainTestSuite is
       Add_Test(suiteObject'Access, shapeTestCase'Access);
       Add_Test(suiteObject'Access, histogramTestCase'Access);
       Add_Test(suiteObject'Access, histogramDescriptorTestCase'Access);
+      Add_Test(suiteObject'Access, shapeDbTests'Access);
       return suiteObject'Access;
    end Suite;
 
