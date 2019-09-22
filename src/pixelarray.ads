@@ -18,23 +18,29 @@ package PixelArray is
       width_d, height_d: Natural := 0;
    end record;
 
-   function width(img: ImagePlane) return Natural;
+   function width(img: ImagePlane) return Natural
+     with Inline;
 
-   function height(img: ImagePlane) return Natural;
+   function height(img: ImagePlane) return Natural
+     with Inline;
 
    function allocate(width, height: Natural) return ImagePlane
      with Post => (width = allocate'Result.width);
 
    procedure set(img: out ImagePlane; x, y: Natural; px: Pixel)
-     with Pre => (x < img.width and y < img.height);
+     with Pre => (x < img.width and y < img.height),
+     Inline;
 
    function get(img: ImagePlane; x, y: Natural) return Pixel
-     with Pre => (x < img.width and y < img.height);
+     with Pre => (x < img.width and y < img.height),
+     Inline;
 
    procedure set(img: in out ImagePlane; px: Pixel)
-     with Post => img'Old.width = img.width and img'Old.height = img.height;
+     with Post => img'Old.width = img.width and img'Old.height = img.height,
+     Inline;
 
-   function isInside(image: in ImagePlane; x, y: in Integer) return Boolean;
+   function isInside(image: in ImagePlane; x, y: in Integer) return Boolean
+     with Inline;
 
    function allPixels(img: in ImagePlane; condition: access function(px: Pixel) return Boolean) return Boolean
      with Pre => (img.width > 0 and img.height > 0);

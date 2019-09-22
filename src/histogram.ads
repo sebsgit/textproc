@@ -17,12 +17,15 @@ package Histogram is
      with Post => (createEmpty'Result.size = size and createEmpty'Result.sum = 0.0);
 
    procedure set(d: out Data; i: Natural; value: Float)
-     with Pre => (i < d.size);
+     with Pre => (i < d.size),
+     Inline;
 
    function get(d: Data; i: Natural) return Float
-     with Pre => (i < d.size);
+     with Pre => (i < d.size),
+     Inline;
 
-   function size(d: Data) return Natural;
+   function size(d: Data) return Natural
+     with Inline;
 
    function sum(d: Data) return Float;
 
