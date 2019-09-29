@@ -9,4 +9,6 @@ package ShapeMatchingTests is
    function Name(T: TestCase) return Message_String;
 
    procedure testBasicShapes(T : in out Test_Cases.Test_Case'Class);
+
+   procedure testComplexImage(T: in out Test_Cases.Test_Case'Class);
 end ShapeMatchingTests;

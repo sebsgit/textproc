@@ -25,4 +25,5 @@ package ImageRegions is
    package RegionVector is new Ada.Containers.Vectors(Index_Type => Natural, Element_Type => Region);
 
    function detectRegions(image: in out PixelArray.ImagePlane) return RegionVector.Vector;
+   procedure sortRegions(input: in out RegionVector.Vector);
 end ImageRegions;

@@ -6,6 +6,7 @@ with Morphology;
 
 with Ada.Containers.Vectors;
 
+--TODO: add histogram data for character descriptor
 package ShapeDatabase is
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,

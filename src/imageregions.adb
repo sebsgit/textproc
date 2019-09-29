@@ -1,6 +1,9 @@
 with PixelArray; use PixelArray;
 with Ada.Text_IO;
 with Ada.Containers.Indefinite_Ordered_Maps;
+with Ada.Containers.Generic_Sort;
+
+use Ada.Containers;
 
 -- keep track of (min, max) coords for each label
 --
@@ -115,5 +118,29 @@ package body ImageRegions is
       end loop;
       return result;
    end detectRegions;
+
+   procedure sortRegions(input: in out RegionVector.Vector) is
+      function regionBefore(i1, i2: Natural) return Boolean is
+      begin
+         if input(i1).area.x = input(i2).area.x then
+            return input(i1).area.y < input(i2).area.y;
+         end if;
+         return input(i1).area.x < input(i2).area.x;
+      end regionBefore;
+
+      procedure regionSwap(i1, i2: Natural) is
+         tmp: ImageRegions.Region;
+      begin
+         tmp := input(i1);
+         input(i1) := input(i2);
+         input(i2) := tmp;
+      end regionSwap;
+
+      procedure doTheSorting is new Ada.Containers.Generic_Sort(Index_Type => Natural,
+                                                                Before     => regionBefore,
+                                                                Swap => regionSwap);
+   begin
+      doTheSorting(0, Integer(input.Length - 1));
+   end sortRegions;
 
 end ImageRegions;
