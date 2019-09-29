@@ -33,28 +33,33 @@ begin
 
       database: ShapeDatabase.DB;
 
-      function regionBefore(i1, i2: Natural) return Boolean is
-      begin
-         if regions(i1).area.x = regions(i2).area.x then
-            return regions(i1).area.y < regions(i2).area.y;
-         end if;
-         return regions(i1).area.x < regions(i2).area.x;
-      end regionBefore;
+      procedure sortImageRegions(input: in out ImageRegions.RegionVector.Vector) is
+         function regionBefore(i1, i2: Natural) return Boolean is
+         begin
+            if input(i1).area.x = input(i2).area.x then
+               return input(i1).area.y < input(i2).area.y;
+            end if;
+            return input(i1).area.x < input(i2).area.x;
+         end regionBefore;
 
-      procedure regionSwap(i1, i2: Natural) is
-         tmp: ImageRegions.Region;
-      begin
-         tmp := regions(i1);
-         regions(i1) := regions(i2);
-         regions(i2) := tmp;
-      end regionSwap;
+         procedure regionSwap(i1, i2: Natural) is
+            tmp: ImageRegions.Region;
+         begin
+            tmp := input(i1);
+            input(i1) := input(i2);
+            input(i2) := tmp;
+         end regionSwap;
 
-      procedure regionSort is new Ada.Containers.Generic_Sort(Index_Type => Natural,
-                                                              Before     => regionBefore,
-                                                              Swap => regionSwap);
+         procedure doTheSorting is new Ada.Containers.Generic_Sort(Index_Type => Natural,
+                                                                   Before     => regionBefore,
+                                                                   Swap => regionSwap);
+      begin
+         doTheSorting(0, Integer(input.Length - 1));
+      end sortImageRegions;
+
    begin
       MainTestSuite.runAll;
-      return ;
+      --return ;
 
       testImage := ImageIO.load(Ada.Command_Line.Argument(1));
       testImage := ImageFilters.gaussian(testImage, 7, 2.4);
@@ -75,7 +80,7 @@ begin
       -- detect regions
       regions := ImageRegions.detectRegions(testImage);
 
-      regionSort(0, Integer(regions.Length - 1));
+      sortImageRegions(regions);
 
 
       -- create unit test => should be 11 labels
