@@ -7,16 +7,9 @@ package PixelArray is
 
    type Pixel is range 0 .. 255;
 
-   package PixelVector is new Ada.Containers.Vectors (Index_Type => Natural, Element_Type => Pixel);
+   Background: constant Pixel := 255;
 
-   type PixelData is array (Natural range <>) of Pixel;
-
-   Background: Pixel := 255;
-
-   type ImagePlane is tagged record
-      data: PixelVector.Vector;
-      width_d, height_d: Natural := 0;
-   end record;
+   type ImagePlane is tagged private;
 
    function width(img: ImagePlane) return Natural
      with Inline;
@@ -44,4 +37,13 @@ package PixelArray is
 
    function allPixels(img: in ImagePlane; condition: access function(px: Pixel) return Boolean) return Boolean
      with Pre => (img.width > 0 and img.height > 0);
+
+private
+   package PixelVector is new Ada.Containers.Vectors (Index_Type => Natural, Element_Type => Pixel);
+
+   type ImagePlane is tagged record
+      data: PixelVector.Vector;
+      width_d, height_d: Natural := 0;
+   end record;
+
 end PixelArray;
