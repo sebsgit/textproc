@@ -28,8 +28,8 @@ package body HistogramTests is
    end Name;
 
    procedure testBasicHistograms(T : in out Test_Cases.Test_Case'Class) is
-      d: Histogram.Data := Histogram.createEmpty(size => 5);
-      d1: Histogram.Data := Histogram.createEmpty(size => 5);
+      d: Histogram.Data(5);
+      d1: Histogram.Data(5);
    begin
       Assert(d.sum = 0.0, "test 1");
       Assert(d.size = 5, "test size");
@@ -52,7 +52,6 @@ package body HistogramTests is
       d: Histogram.Data(3);
       resized: Histogram.Data(4);
    begin
-      d := Histogram.createEmpty(3);
       d.set(0, 7.0);
       d.set(1, 3.0);
       d.set(2, 1.0);
@@ -163,8 +162,6 @@ package body HistogramTests is
       method: Histogram.CompareMethod;
    begin
       method := Histogram.Bhattacharyya;
-      h0 := Histogram.createEmpty(5);
-      h1 := Histogram.createEmpty(5);
       dist := h0.compare(h1, method);
       Assert(dist = 0.0, "compare id");
       h0.set(0, 1.0);

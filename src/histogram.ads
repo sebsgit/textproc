@@ -1,6 +1,9 @@
 with PixelArray;
+with Ada.Strings.Unbounded;
 
-package Histogram is
+package Histogram
+with SPARK_Mode => On
+is
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);
@@ -10,18 +13,15 @@ package Histogram is
    type Bins is array (Positive range<>) of Float;
 
    type Data (Size: Positive) is tagged record
-      bin: Bins(1 .. Size);
+      bin: Bins(1 .. Size) := (others => 0.0);
    end record;
 
-   function createEmpty(size: Positive) return Data
-     with Post => (createEmpty'Result.size = size and createEmpty'Result.sum = 0.0);
-
    procedure set(d: out Data; i: Natural; value: Float)
-     with Pre => (i < d.size),
+     with Pre'Class => (i < d.size),
      Inline;
 
    function get(d: Data; i: Natural) return Float
-     with Pre => (i < d.size),
+     with Pre'Class => (i < d.size),
      Inline;
 
    function size(d: Data) return Natural
@@ -47,13 +47,13 @@ package Histogram is
 
    function compare(d0, d1: Data; method: CompareMethod) return Float
      with
-       Pre => d0.size = d1.size;
+       Pre'Class => d0.size = d1.size;
 
    function add(d0, d1: Data) return Data
      with
-       Pre => d0.size = d1.size,
+       Pre'Class => d0.size = d1.size,
        Post => add'Result.size = d1.size and (for all i in 0 .. d1.size -1 => add'Result.get(i) = d0.get(i) + d1.get(i));
 
-   procedure print(d: Data);
+   function toString(d: Data) return Ada.Strings.Unbounded.Unbounded_String;
 
 end Histogram;

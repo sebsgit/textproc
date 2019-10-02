@@ -6,7 +6,7 @@ use PixelArray;
 package body HistogramGenerator is
 
    function verticalProjection(image: PixelArray.ImagePlane; r: ImageRegions.Rect) return Histogram.Data is
-      result: Histogram.Data := Histogram.createEmpty(r.height);
+      result: Histogram.Data(r.height);
    begin
       for h in 0 .. r.height - 1 loop
          declare
@@ -24,7 +24,7 @@ package body HistogramGenerator is
    end verticalProjection;
 
    function horizontalProjection(image:PixelArray.ImagePlane; r: ImageRegions.Rect) return Histogram.Data is
-      result: Histogram.Data := Histogram.createEmpty(r.width);
+      result: Histogram.Data(r.width);
    begin
       for h in 0 .. r.height - 1 loop
          for w in 0 .. r.width - 1 loop

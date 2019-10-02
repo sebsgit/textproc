@@ -1,20 +1,14 @@
 with Ada.Numerics.Generic_Elementary_Functions;
 with Ada.Exceptions;
-with Ada.Text_IO;
+with Ada.Strings.Unbounded;
+use Ada.Strings.Unbounded;
 
-package body Histogram is
+package body Histogram
+with SPARK_Mode => On
+is
 
    package Float_Functions is new Ada.Numerics.Generic_Elementary_Functions(Float);
    use Float_Functions;
-
-   function createEmpty(size: Positive) return Data is
-      result: Data(size);
-   begin
-      for i in result.bin'Range loop
-         result.bin(i) := 0.0;
-      end loop;
-      return result;
-   end createEmpty;
 
    procedure set(d: out Data; i:Natural; value: Float) is
    begin
@@ -46,7 +40,7 @@ package body Histogram is
    end average;
 
    function normalized(d: Data) return Data is
-      result: Data := createEmpty(d.size);
+      result: Data(d.size);
       total: Float := d.sum;
    begin
       for i in result.bin'Range loop
@@ -72,7 +66,6 @@ package body Histogram is
       if d.size = size then
          return d;
       end if;
-      result := createEmpty(size);
       result.set(0, d.get(0));
       result.set(result.size - 1, d.get(d.size - 1));
       scale := Float(d.size - 1) / Float(size - 1);
@@ -99,7 +92,7 @@ package body Histogram is
    end multiply;
 
    function multiplied(d: Data; value: Float) return Data is
-      result: Data(d.size);
+      result: Data := (size => d.size, bin => d.bin);
    begin
       for i in 0 .. d.size - 1 loop
          result.set(i, d.get(i) * value);
@@ -107,7 +100,8 @@ package body Histogram is
       return result;
    end multiplied;
 
-   function compare(d0, d1: Data; method: CompareMethod) return Float is
+   function compare(d0, d1: Data; method: CompareMethod) return Float
+   is
       result: Float := 0.0;
       avg0: Float := d0.average;
       avg1: Float := d1.average;
@@ -164,10 +158,6 @@ package body Histogram is
                   end if;
                   result := Sqrt(1.0 - a);
                end if;
-            exception
-               when exc: Ada.Numerics.Argument_Error =>
-                  --
-                  raise;
             end;
       end case;
       return result;
@@ -182,13 +172,15 @@ package body Histogram is
       return result;
    end add;
 
-   procedure print(d: Data) is
+   function toString(d: Data) return Ada.Strings.Unbounded.Unbounded_String is
+      result: Ada.Strings.Unbounded.Unbounded_String;
    begin
-      Ada.Text_IO.Put("[");
+      result := Ada.Strings.Unbounded.To_Unbounded_String("[");
       for i in 0 .. d.size - 2 loop
-         Ada.Text_IO.Put(Float(d.get(i))'Image & ", ");
+         result := result & Float(d.get(i))'Image & ", ";
       end loop;
-      Ada.Text_IO.Put_Line(Float(d.get(d.size - 1))'Image & "]");
-   end print;
+      result := result & Float(d.get(d.size - 1))'Image & "]";
+      return result;
+   end toString;
 
 end Histogram;
