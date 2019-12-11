@@ -3,10 +3,11 @@ with ImageRegions;
 with ImageMoments;
 with ImageThresholds;
 with Morphology;
+with Histogram;
+with HistogramDescriptor;
 
 with Ada.Containers.Vectors;
 
---TODO: add histogram data for character descriptor
 package ShapeDatabase is
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
@@ -15,6 +16,7 @@ package ShapeDatabase is
    type Descriptor is tagged record
       moments: ImageMoments.HuMoments;
       orientation: Float;
+      histogram: HistogramDescriptor.Data;
    end record;
 
    type CharacterDescriptor is record

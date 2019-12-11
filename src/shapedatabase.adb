@@ -5,6 +5,8 @@ with ImageMoments;
 with ImageFilters;
 with ImageThresholds;
 with Morphology;
+with Histogram;
+with HistogramDescriptor;
 
 with Ada.Text_IO;
 with Ada.Containers.Vectors;
@@ -33,6 +35,8 @@ package body ShapeDatabase is
    begin
       result.moments := ImageMoments.calculateMoments(image, rect);
       result.orientation := ImageMoments.orientationAngle(image, rect);
+      result.histogram := HistogramDescriptor.create(image  => image,
+                                                     region => rect.area);
       return result;
    end processRegion;
 

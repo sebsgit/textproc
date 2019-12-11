@@ -1,6 +1,7 @@
 with AUnit; use AUnit;
 with AUnit.Test_Cases; use AUnit.Test_Cases;
 
+--TODO: add tests for histogram data
 package ShapeDatabaseTest is
    type TestCase is new AUnit.Test_Cases.Test_Case with null record;
 

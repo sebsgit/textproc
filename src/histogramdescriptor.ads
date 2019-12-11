@@ -7,7 +7,7 @@ package HistogramDescriptor is
                             Post => Check,
                             Type_Invariant => Check);
 
-   BinCount: Natural := 20;
+   BinCount: Positive := 20;
 
    type Divergence is (JensenShannon, KullbackLeibler);
 
