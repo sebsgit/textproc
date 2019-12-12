@@ -14,7 +14,8 @@ project TextProcs is
    end Builder;
 
    package Compiler is
-      for Switches ("ada") use ("-fPIC", "-O");
+      for Switches ("ada") use ("-fPIC", "-O", "-gnatn", "-O2");
+      for Switches ("c") use ("-O3");
    end Compiler;
 
    for Languages use ("Ada", "C");

@@ -126,6 +126,7 @@ package body ShapeDatabase is
       if Integer(r.Length) /= dotPosition -1 then
          raise Capacity_Error with imagePath & ": processing error";
       end if;
+      ImageRegions.sortRegions(r);
       for i in 0 .. r.Length - 1 loop
          declare
             desc: CharacterDescriptor;

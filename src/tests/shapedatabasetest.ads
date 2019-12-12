@@ -9,5 +9,6 @@ package ShapeDatabaseTest is
 
    function Name(T: TestCase) return Message_String;
 
+   procedure testHistogramDescriptors(T : in out Test_Cases.Test_Case'Class);
    procedure testLearningData(T : in out Test_Cases.Test_Case'Class);
 end ShapeDatabaseTest;

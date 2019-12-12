@@ -95,6 +95,18 @@ package body ImageRegions is
       end loop;
    end drawCross;
 
+   procedure drawBox(image: out PixelArray.ImagePlane; box: Rect; color: PixelArray.Pixel) is
+   begin
+      for px in box.x .. box.x + box.width loop
+         image.set(px, box.y, color);
+         image.set(px, box.y + box.height, color);
+      end loop;
+      for py in box.y .. box.y + box.height loop
+         image.set(box.x, py, color);
+         image.set(box.x + box.width, py, color);
+      end loop;
+   end drawBox;
+
    function detectRegions(image: in out PixelArray.ImagePlane) return RegionVector.Vector is
       result: RegionVector.Vector;
       labelData: LabelMapPkg.Map;
@@ -118,6 +130,17 @@ package body ImageRegions is
       end loop;
       return result;
    end detectRegions;
+
+   procedure markRegions(image: in out PixelArray.ImagePlane; color: PixelArray.Pixel) is
+      allRegions: RegionVector.Vector;
+   begin
+      allRegions := detectRegions(image);
+      for r of allRegions loop
+         drawBox(image => image,
+                 box   => r.area,
+                 color => color);
+      end loop;
+   end markRegions;
 
    procedure sortRegions(input: in out RegionVector.Vector) is
       function regionBefore(i1, i2: Natural) return Boolean is
