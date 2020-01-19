@@ -10,7 +10,8 @@ with HistogramDescriptor;
 
 with Ada.Text_IO;
 with Ada.Containers.Vectors;
-with Ada.Strings.Fixed; use Ada.Strings.Fixed;
+with Ada.Strings.Fixed;
+with Ada.Strings.Unbounded;
 
 use Ada.Containers;
 
@@ -61,30 +62,6 @@ package body ShapeDatabase is
       database.shapes.Append(desc);
    end add;
 
-   function init return DB is
-      result: DB;
-      reg: ShapeVector.Vector;
-   begin
-      result.add(loadShape('0', "0.jpg"));
-      result.add(loadShape('1', "1.jpg"));
-      result.add(loadShape('1', "1_1.jpg"));
-      result.add(loadShape('2', "2.jpg"));
-      result.add(loadShape('2', "2_.jpg"));
-      result.add(loadShape('3', "3.jpg"));
-      result.add(loadShape('4', "4.jpg"));
-
-      result.add(loadShape('7', "7.jpg"));
-      result.add(loadShape('8', "8.jpg"));
-      result.add(loadShape('9', "9.jpg"));
-
-      reg := loadShapes("20180501.1.jpg");
-      for d in 0 .. reg.Length - 1 loop
-         result.add(reg(Integer(d)));
-      end loop;
-
-      return result;
-   end init;
-
    function getDB return DB is
    begin
       return staticDB;
@@ -119,17 +96,32 @@ package body ShapeDatabase is
       return result;
    end match;
 
+   function getCharacterString(imagePath: String) return Ada.Strings.Unbounded.Unbounded_String is
+      firstDotPosition: Natural := 0;
+      lastSlashPosition: Natural := 0;
+      startIndex: Natural := 1;
+      result: Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      lastSlashPosition := Ada.Strings.Fixed.Index(imagePath, "/", Ada.Strings.Backward);
+      if lastSlashPosition /= 0 then
+         startIndex := lastSlashPosition + 1;
+      end if;
+      firstDotPosition := Ada.Strings.Fixed.Index(imagePath, ".", startIndex);
+      result := Ada.Strings.Unbounded.To_Unbounded_String(imagePath);
+      result := Ada.Strings.Unbounded.To_Unbounded_String(Ada.Strings.Unbounded.Slice(result, startIndex, firstDotPosition - 1));
+      return result;
+   end getCharacterString;
+
    function loadShapes(imagePath: String) return ShapeVector.Vector is
       result: ShapeVector.Vector;
       image: PixelArray.ImagePlane;
       r: ImageRegions.RegionVector.Vector;
-      dotPosition: Integer := -1;
+      basePath: Ada.Strings.Unbounded.Unbounded_String := getCharacterString(imagePath);
    begin
       image := preprocess(ImageIO.load(imagePath));
-      dotPosition := Index(imagePath, ".");
       r := ImageRegions.detectRegions(image);
-      if Integer(r.Length) /= dotPosition -1 then
-         raise Capacity_Error with imagePath & ": processing error";
+      if Integer(r.Length) /= Ada.Strings.Unbounded.Length(basePath) then
+         raise Capacity_Error with imagePath & " --> " & Ada.Strings.Unbounded.To_String(basePath) & ": processing error";
       end if;
       ImageRegions.sortRegions(r);
       for i in 0 .. r.Length - 1 loop
@@ -143,6 +135,30 @@ package body ShapeDatabase is
       end loop;
       return result;
    end loadShapes;
+
+   function init return DB is
+      result: DB;
+      reg: ShapeVector.Vector;
+   begin
+      result.add(loadShape('0', "0.jpg"));
+      result.add(loadShape('1', "1.jpg"));
+      result.add(loadShape('1', "1_1.jpg"));
+      result.add(loadShape('2', "2.jpg"));
+      result.add(loadShape('2', "2_.jpg"));
+      result.add(loadShape('3', "3.jpg"));
+      result.add(loadShape('4', "4.jpg"));
+
+      result.add(loadShape('7', "7.jpg"));
+      result.add(loadShape('8', "8.jpg"));
+      result.add(loadShape('9', "9.jpg"));
+
+      reg := loadShapes("20180501.1.jpg");
+      for d in 0 .. reg.Length - 1 loop
+         result.add(reg(Integer(d)));
+      end loop;
+
+      return result;
+   end init;
 begin
    staticDB := init;
 end ShapeDatabase;
