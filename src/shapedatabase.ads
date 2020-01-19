@@ -7,6 +7,7 @@ with Histogram;
 with HistogramDescriptor;
 
 with Ada.Containers.Vectors;
+with Ada.Directories;
 
 package ShapeDatabase is
    pragma Assertion_Policy (Pre => Check,
@@ -44,7 +45,9 @@ package ShapeDatabase is
    function getDB return DB;
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore;
 
-   function loadShapes(imagePath: String) return ShapeVector.Vector;
+   function loadShapes(imagePath: String) return ShapeVector.Vector
+     with Pre => Ada.Directories.Exists(Name => imagePath),
+     Post => not loadShapes'Result.Is_Empty;
 private
    staticDB: DB;
 end ShapeDatabase;
