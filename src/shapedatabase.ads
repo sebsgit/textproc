@@ -41,10 +41,10 @@ package ShapeDatabase is
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane
      with Post => ImageThresholds.isBinary(preprocess'Result);
 
-   function init return DB;
+   function getDB return DB;
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore;
-   procedure add(database: in out DB; desc: CharacterDescriptor);
 
    function loadShapes(imagePath: String) return ShapeVector.Vector;
-
+private
+   staticDB: DB;
 end ShapeDatabase;

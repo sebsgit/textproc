@@ -56,6 +56,11 @@ package body ShapeDatabase is
       return result;
    end loadShape;
 
+   procedure add(database: in out DB; desc: CharacterDescriptor) is
+   begin
+      database.shapes.Append(desc);
+   end add;
+
    function init return DB is
       result: DB;
       reg: ShapeVector.Vector;
@@ -80,10 +85,10 @@ package body ShapeDatabase is
       return result;
    end init;
 
-   procedure add(database: in out DB; desc: CharacterDescriptor) is
+   function getDB return DB is
    begin
-      database.shapes.Append(desc);
-   end add;
+      return staticDB;
+   end getDB;
 
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore is
       result: MatchScore;
@@ -138,5 +143,6 @@ package body ShapeDatabase is
       end loop;
       return result;
    end loadShapes;
-
+begin
+   staticDB := init;
 end ShapeDatabase;

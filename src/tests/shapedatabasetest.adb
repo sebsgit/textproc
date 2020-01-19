@@ -27,7 +27,7 @@ package body ShapeDatabaseTest is
    end Name;
 
    function findBestHistogramMatch(db: in ShapeDatabase.DB; desc: in ShapeDatabase.CharacterDescriptor)
-   return ShapeDatabase.CharacterDescriptor
+                                   return ShapeDatabase.CharacterDescriptor
    is
       result: ShapeDatabase.CharacterDescriptor;
       bestScoreH: Float := 9999.0;
@@ -39,10 +39,10 @@ package body ShapeDatabaseTest is
             currentScoreV: Float;
          begin
             currentScoreH := HistogramDescriptor.computeDivergence(h0     => desc.d.histogram.horizontal,
-                                                                  h1     => db.shapes.Element(i).d.histogram.horizontal,
+                                                                   h1     => db.shapes.Element(i).d.histogram.horizontal,
                                                                    method => HistogramDescriptor.JensenShannon);
             currentScoreV := HistogramDescriptor.computeDivergence(h0     => desc.d.histogram.vertical,
-                                                                  h1     => db.shapes.Element(i).d.histogram.vertical,
+                                                                   h1     => db.shapes.Element(i).d.histogram.vertical,
                                                                    method => HistogramDescriptor.JensenShannon);
             if currentScoreH < bestScoreH and currentScoreV < bestScoreV then
                bestScoreH := currentScoreH;
@@ -80,7 +80,7 @@ package body ShapeDatabaseTest is
       resA: ShapeDatabase.CharacterDescriptor;
       resB: ShapeDatabase.CharacterDescriptor;
    begin
-      db := ShapeDatabase.init;
+      db := ShapeDatabase.getDB;
       shapes := ShapeDatabase.loadShapes("22.jpg");
       Assert(shapes.Length = 2, "2 shapes");
 

@@ -41,7 +41,7 @@ package body ShapeMatchingTests is
       db: ShapeDatabase.DB;
       score: ShapeDatabase.MatchScore;
    begin
-      db := ShapeDatabase.init;
+      db := ShapeDatabase.getDB;
       score := testShape(db, "1.jpg");
       Assert(score.cc = '1', "test 1");
    end testBasicShapes;
@@ -58,7 +58,7 @@ package body ShapeMatchingTests is
                          region => regions(index));
       end matchAt;
    begin
-      db := ShapeDatabase.init;
+      db := ShapeDatabase.getDB;
       testImage := ImageIO.load("test_complex.jpg");
       testImage := ShapeDatabase.preprocess(testImage);
       regions := ImageRegions.detectRegions(testImage);
