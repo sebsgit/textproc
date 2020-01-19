@@ -136,9 +136,17 @@ package body ShapeDatabase is
       return result;
    end loadShapes;
 
+   procedure insertShapes(result: out DB; imagePath: String) is
+      shapes: ShapeVector.Vector;
+   begin
+      shapes := loadShapes(imagePath);
+      for d in 0 .. shapes.Length - 1 loop
+         result.add(shapes(Integer(d)));
+      end loop;
+   end insertShapes;
+
    function init return DB is
       result: DB;
-      reg: ShapeVector.Vector;
    begin
       result.add(loadShape('0', "0.jpg"));
       result.add(loadShape('1', "1.jpg"));
@@ -152,10 +160,7 @@ package body ShapeDatabase is
       result.add(loadShape('8', "8.jpg"));
       result.add(loadShape('9', "9.jpg"));
 
-      reg := loadShapes("20180501.1.jpg");
-      for d in 0 .. reg.Length - 1 loop
-         result.add(reg(Integer(d)));
-      end loop;
+      insertShapes(result, "20180501.1.jpg");
 
       return result;
    end init;
