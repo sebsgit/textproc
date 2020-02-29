@@ -101,11 +101,9 @@ package body NeuralNet is
          result.Reserve_Capacity(Capacity => nn.layers(i).Length);
          for n in nn.layers(i).First_Index .. nn.layers(i).Last_Index loop
             declare
-               neu: Neuron := nn.layers(i)(n);
+               neu: Neuron renames nn.layers(i)(n);
             begin
                result.Append( forward(neu, input) );
-               nn.layers(i).Replace_Element(Index    => n,
-                                            New_Item => neu);
             end;
          end loop;
          input.Move(result);
@@ -161,15 +159,17 @@ package body NeuralNet is
                   next_layer_ref: NeuronVecPkg.Vector renames nn.layers(next_to_current);
                   current_layer_grad_ref: MathUtils.Vector renames nn.gradients(current_layer);
                   next_layer_grad_ref: MathUtils.Vector renames nn.gradients(next_to_current);
-                  n: Neuron;
                begin
                   for id in current_layer_ref.First_Index .. current_layer_ref.Last_Index loop
-                     n := current_layer_ref(id);
-                     current_layer_grad_ref(id) := 0.0;
-                     for next_id in next_layer_ref.First_Index .. next_layer_ref.Last_Index loop
-                        current_layer_grad_ref(id) := current_layer_grad_ref(id) + next_layer_ref(next_id).w(id) * next_layer_grad_ref(next_id);
-                     end loop;
-                     current_layer_grad_ref(id) := current_layer_grad_ref(id) * derivative(n, n.z);
+                     declare
+                        n: Neuron renames current_layer_ref(id);
+                     begin
+                        current_layer_grad_ref(id) := 0.0;
+                        for next_id in next_layer_ref.First_Index .. next_layer_ref.Last_Index loop
+                           current_layer_grad_ref(id) := current_layer_grad_ref(id) + next_layer_ref(next_id).w(id) * next_layer_grad_ref(next_id);
+                        end loop;
+                        current_layer_grad_ref(id) := current_layer_grad_ref(id) * derivative(n, n.z);
+                     end;
                   end loop;
                end;
                next_to_current := next_to_current - 1;
@@ -180,25 +180,25 @@ package body NeuralNet is
       -- updating nn weights and biases
       for il in nn.layers.First_Index .. nn.layers.Last_Index loop
          declare
-            n: Neuron;
             layer_ref: NeuronVecPkg.Vector renames nn.layers(il);
             gradients: MathUtils.Vector renames nn.gradients(il);
             weight_reduction: Float := 0.0;
          begin
             for ni in layer_ref.First_Index .. layer_ref.Last_Index loop
-               n := layer_ref(ni);
-               --TODO: move gradiend clipping to the optimizer class
-               n.bias := n.bias - nn.clipGradient(Float(nn.conf.lr) * gradients(ni));
-               for wi in n.w'Range loop
-                  if il > nn.layers.First_Index then
-                     weight_reduction := Float(nn.conf.lr) * gradients(ni) * nn.layers(il - 1)(wi).a;
-                  else
-                     weight_reduction := Float(nn.conf.lr) * gradients(ni) * input(wi);
-                  end if;
-                  n.w(wi) := n.w(wi) - nn.clipGradient(weight_reduction);
-               end loop;
-               layer_ref.Replace_Element(Index    => ni,
-                                         New_Item => n);
+               declare
+                  n: Neuron renames layer_ref(ni);
+               begin
+                  --TODO: move gradiend clipping to the optimizer class
+                  n.bias := n.bias - nn.clipGradient(Float(nn.conf.lr) * gradients(ni));
+                  for wi in n.w'Range loop
+                     if il > nn.layers.First_Index then
+                        weight_reduction := Float(nn.conf.lr) * gradients(ni) * nn.layers(il - 1)(wi).a;
+                     else
+                        weight_reduction := Float(nn.conf.lr) * gradients(ni) * input(wi);
+                     end if;
+                     n.w(wi) := n.w(wi) - nn.clipGradient(weight_reduction);
+                  end loop;
+               end;
             end loop;
          end;
       end loop;

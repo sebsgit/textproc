@@ -14,7 +14,6 @@ package body NeuralNetTests is
       use AUnit.Test_Cases.Registration;
    begin
       Register_Routine (T, testBasicNet'Access, "basic net");
-      Register_Routine (T, testRELUActivation'Access, "RELU");
       Register_Routine (T, testForwardPropagation'Access, "forward propagate");
       Register_Routine (T, testTrain'Access, "train basic nn");
       Register_Routine (T, testTrainComplex'Access, "train complex nn");
@@ -56,26 +55,6 @@ package body NeuralNetTests is
       Assert(net.layers(3)(2).w'Length = 3, "expected weights in layer 3 n 2");
 
    end testBasicNet;
-
-   procedure testRELUActivation(T : in out Test_Cases.Test_Case'Class) is
-      n: NeuralNet.Neuron(1);
-      result: Float;
-      input: MathUtils.Vector;
-   begin
-      n.bias := 0.1;
-      n.w := (1 => 0.2);
-      n.act := NeuralNet.RELU;
-
-      input.Append(1.0);
-
-      result := NeuralNet.forward(n, input);
-      Assert(result = 0.3, "activate: " & result'Image);
-
-      input(1) := -1.0;
-
-      result := NeuralNet.forward(n, input);
-      Assert(result = 0.0, "activate: " & result'Image);
-   end testRELUActivation;
 
    procedure testForwardPropagation(T : in out Test_Cases.Test_Case'Class) is
       config: NeuralNet.Config(2);

@@ -8,6 +8,7 @@ with PixelArray;
 with MathUtils;
 with NeuralNet;
 with NNClassifier;
+with Timer;
 
 use Ada.Containers;
 use MathUtils.Float_Vec;
@@ -62,14 +63,22 @@ package body TrainingSetTests is
       validationSet: TrainingData.Set;
       config: NeuralNet.Config(1);
       dnn: NNClassifier.DNN(config.size + 1);
+      tm: Timer.T;
 
       pred: MathUtils.Vector;
       di: Positive := 1;
 
       failedPredictions: Natural := 0;
    begin
+      Ada.Text_IO.Put_Line("Load training set...");
+      tm := Timer.start;
       set.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set/"));
+      tm.report;
+
+      Ada.Text_IO.Put_Line("Load test set...");
       validationSet.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set_test_cases/"));
+      tm.report;
+
       Assert(set.size > 100, "not enough train data: " & set.size'Image);
 
       config.act := NeuralNet.LOGISTIC;
@@ -80,11 +89,16 @@ package body TrainingSetTests is
       dnn := NNClassifier.create(config          => config,
                                  numberOfClasses => 10);
 
+      Ada.Text_IO.Put_Line("Train the model...");
       for i in 0 .. 2 loop
+         tm.reset;
          dnn.train(data   => set.values,
                    labels => set.labels);
+         tm.report;
       end loop;
 
+      Ada.Text_IO.Put_Line("Inference...");
+      tm.reset;
       for lab of validationSet.labels loop
          pred := dnn.classify(validationSet.values.data(di));
          for idx in pred.First_Index .. pred.Last_Index loop
@@ -97,6 +111,7 @@ package body TrainingSetTests is
          end loop;
          di := di + 1;
       end loop;
+      tm.report;
 
       declare
          acc: Float;
