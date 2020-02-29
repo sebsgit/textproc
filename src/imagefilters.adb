@@ -7,7 +7,7 @@ package body ImageFilters is
       type Kernel is array (Natural range <>) of Float;
       k: Kernel (0 .. (2 * size + 1) * (2 * size + 1));
       result: PixelArray.ImagePlane;
-      sigma2: Float := sigma * sigma;
+      sigma2: constant Float := sigma * sigma;
       index: Natural;
       tmpSum: Float;
 

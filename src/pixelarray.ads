@@ -38,6 +38,14 @@ package PixelArray is
    function allPixels(img: in ImagePlane; condition: access function(px: Pixel) return Boolean) return Boolean
      with Pre => (img.width > 0 and img.height > 0);
 
+   function rescale(img: in ImagePlane; w, h: in Positive) return ImagePlane
+     with Post => rescale'Result.width = w and rescale'Result.height = h;
+
+   function cut(img: in ImagePlane; x, y: in Natural; w, h: in Positive) return ImagePlane
+     with Pre => (x < img.width and y < img.height) and (w <= img.width and h <= img.height),
+     Post => cut'Result.width = w and cut'Result.height = h,
+     Inline;
+
 private
    package PixelVector is new Ada.Containers.Vectors (Index_Type => Natural, Element_Type => Pixel);
 

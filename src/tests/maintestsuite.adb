@@ -6,6 +6,10 @@ with ShapeMatchingTests;
 with ShapeDatabaseTest;
 with HistogramTests;
 with HistogramDescriptorTests;
+with NeuralNetTests;
+with DataBatchTests;
+with NNClassifierTests;
+with TrainingSetTests;
 
 package body MainTestSuite is
    use AUnit.Test_Suites;
@@ -17,6 +21,10 @@ package body MainTestSuite is
    histogramTestCase: aliased HistogramTests.TestCase;
    histogramDescriptorTestCase: aliased HistogramDescriptorTests.TestCase;
    shapeDbTests: aliased ShapeDatabaseTest.TestCase;
+   nnTests: aliased NeuralNetTests.TestCase;
+   dataBatchTestCase: aliased DataBatchTests.TestCase;
+   nnClassifyTestCase: aliased NNClassifierTests.TestCase;
+   trainSetTestCase: aliased TrainingSetTests.TestCase;
 
    function Suite return Access_Test_Suite is
    begin
@@ -25,6 +33,10 @@ package body MainTestSuite is
       Add_Test(suiteObject'Access, histogramTestCase'Access);
       Add_Test(suiteObject'Access, histogramDescriptorTestCase'Access);
       Add_Test(suiteObject'Access, shapeDbTests'Access);
+      Add_Test(suiteObject'Access, nnTests'Access);
+      Add_Test(suiteObject'Access, dataBatchTestCase'Access);
+      Add_Test(suiteObject'Access, nnClassifyTestCase'Access);
+      Add_Test(suiteObject'Access, trainSetTestCase'Access);
       return suiteObject'Access;
    end Suite;
 

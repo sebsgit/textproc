@@ -21,7 +21,7 @@ package body ImageIO is
             for y in 0 .. imageData.height - 1 loop
                for x in 0 .. imageData.width - 1 loop
                   declare
-                     ptr: StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(x + y * imageData.width);
+                     ptr: constant StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(x + y * imageData.width);
                   begin
                      result.set(Integer(x), Integer(y), PixelArray.Pixel(ptr.all));
                   end;
@@ -31,10 +31,10 @@ package body ImageIO is
             for y in 0 .. imageData.height - 1 loop
                for x in 0 .. imageData.width - 1 loop
                   declare
-                     ptrR: StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(3 * x + 0 + y * 3 * imageData.width);
-                     ptrG: StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(3 * x + 1 + y * 3 * imageData.width);
-                     ptrB: StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(3 * x + 2 + y * 3 * imageData.width);
-                     avgPx: Float := (Float(ptrR.all) + Float(ptrG.all) + Float(ptrB.all)) / 3.0;
+                     ptrR: constant StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(3 * x + 0 + y * 3 * imageData.width);
+                     ptrG: constant StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(3 * x + 1 + y * 3 * imageData.width);
+                     ptrB: constant StbiWrapper.UCharPtr.Pointer := imageData.pixels + C.ptrdiff_t(3 * x + 2 + y * 3 * imageData.width);
+                     avgPx: constant Float := (Float(ptrR.all) + Float(ptrG.all) + Float(ptrB.all)) / 3.0;
                   begin
                      result.set(Integer(x), Integer(y), PixelArray.Pixel(avgPx));
                   end;
@@ -49,7 +49,7 @@ package body ImageIO is
    is
    begin
       declare
-         arraySize: C.size_t := C.size_t(image.width * image.height * 3);
+         arraySize: constant C.size_t := C.size_t(image.width * image.height * 3);
          pxArray: StbiWrapper.UCharArray(0 .. arraySize);
          save_result: C.int;
          index: Integer := 0;
@@ -57,7 +57,7 @@ package body ImageIO is
          for y in 0 .. image.height - 1 loop
             for x in 0 .. image.width - 1 loop
                declare
-                  charValue: C.unsigned_char := C.unsigned_char(image.get(x, y));
+                  charValue: constant C.unsigned_char := C.unsigned_char(image.get(x, y));
                begin
                   pxArray(C.size_t(3 * index)) := charValue;
                   pxArray(C.size_t(3 * index + 1)) := charValue;

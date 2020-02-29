@@ -116,7 +116,7 @@ package body ShapeDatabase is
       result: ShapeVector.Vector;
       image: PixelArray.ImagePlane;
       r: ImageRegions.RegionVector.Vector;
-      basePath: Ada.Strings.Unbounded.Unbounded_String := getCharacterString(imagePath);
+      basePath: constant Ada.Strings.Unbounded.Unbounded_String := getCharacterString(imagePath);
    begin
       image := preprocess(ImageIO.load(imagePath));
       r := ImageRegions.detectRegions(image);

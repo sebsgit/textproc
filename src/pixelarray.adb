@@ -55,4 +55,50 @@ package body PixelArray is
       return True;
    end allPixels;
 
+   function rescale(img: in ImagePlane; w, h: in Positive) return ImagePlane is
+      result: ImagePlane;
+
+      function sample(x, y: in Natural) return Pixel is
+         nx: Natural;
+         ny: Natural;
+      begin
+         nx := (x * img.width) / w;
+         ny := (y * img.height) / h;
+         return img.get(nx, ny);
+      end sample;
+
+   begin
+      result := allocate(width  => w,
+                         height => h);
+      for y in 0 .. h - 1 loop
+         for x in 0 .. w - 1 loop
+            result.set(x  => x,
+                       y  => y,
+                       px => sample(x, y));
+         end loop;
+      end loop;
+      return result;
+   end;
+
+   function cut(img: in ImagePlane; x, y: in Natural; w, h: in Positive) return ImagePlane is
+      result: ImagePlane;
+      xr: Natural := 0;
+      yr: Natural := 0;
+   begin
+      result := allocate(width  => w,
+                         height => h);
+      for yi in y .. y + h - 1 loop
+         xr := 0;
+         for xi in x .. x + w - 1 loop
+            result.set(x  => xr,
+                       y  => yr,
+                       px => img.get(xi, yi));
+            xr := xr + 1;
+         end loop;
+         yr := yr + 1;
+      end loop;
+      return result;
+   end cut;
+
+
 end PixelArray;

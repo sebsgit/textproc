@@ -41,7 +41,7 @@ is
 
    function normalized(d: Data) return Data is
       result: Data(d.size);
-      total: Float := d.sum;
+      total: constant Float := d.sum;
    begin
       for i in result.bin'Range loop
          result.bin(i) := d.bin(i) / total;
@@ -50,7 +50,7 @@ is
    end normalized;
 
    procedure normalize(d: in out Data) is
-      total: Float := d.sum;
+      total: constant Float := d.sum;
    begin
       if total /= 0.0 then
          for i in d.bin'Range loop
@@ -71,12 +71,12 @@ is
       scale := Float(d.size - 1) / Float(size - 1);
       for i in 1 .. result.size - 2 loop
          declare
-            newCoord: Float := scale * Float(i);
-            x0: Float := Float'Floor(newCoord);
-            x1: Float := x0 + 1.0;
-            weight0: Float := 1.0 - (newCoord - x0);
-            weight1: Float := 1.0 - weight0;
-            total: Float := weight0 * d.get(Natural(x0)) + weight1 * d.get(Natural(x1));
+            newCoord: constant Float := scale * Float(i);
+            x0: constant Float := Float'Floor(newCoord);
+            x1: constant Float := x0 + 1.0;
+            weight0: constant Float := 1.0 - (newCoord - x0);
+            weight1: constant Float := 1.0 - weight0;
+            total: constant Float := weight0 * d.get(Natural(x0)) + weight1 * d.get(Natural(x1));
          begin
             result.set(i, total);
          end;
@@ -103,8 +103,8 @@ is
    function compare(d0, d1: Data; method: CompareMethod) return Float
    is
       result: Float := 0.0;
-      avg0: Float := d0.average;
-      avg1: Float := d1.average;
+      avg0: constant Float := d0.average;
+      avg1: constant Float := d1.average;
    begin
       case method is
          when Correlation =>
