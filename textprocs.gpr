@@ -12,9 +12,13 @@ project TextProcs is
    end Builder;
 
    package Compiler is
-      for Switches ("ada") use ("-gnatw.h.k.p.qk", "-fPIC", "-gnatn", "-O2", "-O");
+      for Switches ("ada") use ("-gnatw.h.k.p.qk", "-fPIC", "-gnatn", "-O2", "-O", "-pg");
       for Switches ("c") use ("-O3");
    end Compiler;
+
+   package Linker is
+      for Switches ("ada") use ("-pg");
+   end Linker;
 
 end TextProcs;
 
