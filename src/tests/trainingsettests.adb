@@ -9,6 +9,7 @@ with MathUtils;
 with NeuralNet;
 with NNClassifier;
 with Timer;
+with CSV;
 
 use Ada.Containers;
 use MathUtils.Float_Vec;
@@ -58,6 +59,36 @@ package body TrainingSetTests is
       return result;
    end oneHotEncode;
 
+   procedure loadMNistData(input, validation: in out TrainingData.Set) is
+      reader: CSV.Reader := CSV.open("../training_set/mnist_train_small.csv");
+      trainSetSize: constant Positive := 350;
+      testSetSize: constant Positive := 2500;
+
+      procedure load(s: in out TrainingData.Set; cnt: in Positive)
+        with Post => s.size >= cnt
+      is
+         i: Positive := 1;
+         vec: MathUtils.Vector;
+         label: Natural;
+      begin
+         while i <= cnt loop
+            vec := reader.next;
+            label := Natural(vec.Element(1));
+            vec.Delete_First;
+            for v of vec loop
+               v := v / 255.0;
+            end loop;
+
+            Assert(Positive(vec.Length) = TrainingData.blockArea, "wrong size of input, expected: " & TrainingData.blockArea'Image & ", got: " & vec.Length'Image);
+            s.add(label, vec);
+            i := i + 1;
+         end loop;
+      end load;
+   begin
+      load(input, trainSetSize);
+      load(validation, testSetSize);
+   end loadMNistData;
+
    procedure testTrainInput(T : in out Test_Cases.Test_Case'Class) is
       set: TrainingData.Set;
       validationSet: TrainingData.Set;
@@ -72,30 +103,24 @@ package body TrainingSetTests is
    begin
       Ada.Text_IO.Put_Line("Load training set...");
       tm := Timer.start;
-      set.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set/"));
-      tm.report;
-
-      Ada.Text_IO.Put_Line("Load test set...");
-      validationSet.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set_test_cases/"));
+      loadMNistData(set, validationSet);
       tm.report;
 
       Assert(set.size > 100, "not enough train data: " & set.size'Image);
 
-      config.act := NeuralNet.LOGISTIC;
+      config.act := NeuralNet.RELU;
       config.inputSize := TrainingData.blockArea;
-      config.lr := 0.9;
-      config.sizes := (1 => 1000);
+      config.lr := 0.2;
+      config.sizes := (1 => 100);
 
       dnn := NNClassifier.create(config          => config,
                                  numberOfClasses => 10);
 
       Ada.Text_IO.Put_Line("Train the model...");
-      for i in 0 .. 2 loop
-         tm.reset;
-         dnn.train(data   => set.values,
-                   labels => set.labels);
-         tm.report;
-      end loop;
+      tm.reset;
+      dnn.train(data   => set.values,
+                labels => set.labels);
+      tm.report;
 
       Ada.Text_IO.Put_Line("Inference...");
       tm.reset;
@@ -118,8 +143,8 @@ package body TrainingSetTests is
       begin
          acc := Float(validationSet.size - failedPredictions) / Float(validationSet.size);
          Ada.Text_IO.Put_Line("Model accuracy: " & acc'Image);
-         -- require > 70% accuracy, TODO: increase training set size
-         Assert(acc > 0.69, "total: " & validationSet.size'Image & ", failed: " & failedPredictions'Image);
+         -- require > 90% accuracy
+         Assert(acc > 0.9, "total: " & validationSet.size'Image & ", failed: " & failedPredictions'Image);
       end;
 
    end testTrainInput;

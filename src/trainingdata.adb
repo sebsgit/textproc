@@ -19,6 +19,12 @@ package body TrainingData is
       return data.values.size;
    end size;
 
+   procedure add(data: in out Set; label: Natural; vec: MathUtils.Vector) is
+   begin
+      data.labels.Append(label);
+      data.values.append(vec);
+   end add;
+
    function getCharacterString(imagePath: String) return Ada.Strings.Unbounded.Unbounded_String is
       firstDotPosition: Natural := 0;
       lastSlashPosition: Natural := 0;

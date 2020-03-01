@@ -10,12 +10,14 @@ with NeuralNetTests;
 with DataBatchTests;
 with NNClassifierTests;
 with TrainingSetTests;
+with CSVTests;
 
 package body MainTestSuite is
    use AUnit.Test_Suites;
 
    suiteObject: aliased Test_Suite;
 
+   csvTestCase: aliased CSVTests.TestCase;
    imageTestCase: aliased ImageTests.ImageTest;
    shapeTestCase: aliased ShapeMatchingTests.TestCase;
    histogramTestCase: aliased HistogramTests.TestCase;
@@ -28,6 +30,7 @@ package body MainTestSuite is
 
    function Suite return Access_Test_Suite is
    begin
+      Add_Test(suiteObject'Access, csvTestCase'Access);
       Add_Test(suiteObject'Access, imageTestCase'Access);
       Add_Test(suiteObject'Access, shapeTestCase'Access);
       Add_Test(suiteObject'Access, histogramTestCase'Access);

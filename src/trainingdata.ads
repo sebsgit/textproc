@@ -16,10 +16,11 @@ package TrainingData is
    end record
      with Dynamic_Predicate => values.size = Natural(labels.Length);
 
-   blockSize: constant Positive := 24;
+   blockSize: constant Positive := 28;
    blockArea: constant Positive := blockSize * blockSize;
 
    function size(data: in Set) return Natural;
+   procedure add(data: in out Set; label: Natural; vec: MathUtils.Vector);
    procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String);
 
    function toDataVector(img: in PixelArray.ImagePlane) return MathUtils.Vector
