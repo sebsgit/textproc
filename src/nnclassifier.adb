@@ -1,3 +1,5 @@
+with Ada.Text_IO;
+
 package body NNClassifier is
    function create(config: NeuralNet.Config; numberOfClasses: Positive) return DNN is
       result: DNN(config.size + 1);

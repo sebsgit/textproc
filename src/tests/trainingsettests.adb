@@ -61,8 +61,8 @@ package body TrainingSetTests is
 
    procedure loadMNistData(input, validation: in out TrainingData.Set) is
       reader: CSV.Reader := CSV.open("../training_set/mnist_train_small.csv");
-      trainSetSize: constant Positive := 350;
-      testSetSize: constant Positive := 2500;
+      trainSetSize: constant Positive := 1350;
+      testSetSize: constant Positive := 250;
 
       procedure load(s: in out TrainingData.Set; cnt: in Positive)
         with Post => s.size >= cnt
@@ -103,15 +103,21 @@ package body TrainingSetTests is
    begin
       Ada.Text_IO.Put_Line("Load training set...");
       tm := Timer.start;
+      --  set.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set/"));
+      -- tm.report;
+      -- validationSet.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set_test_cases/"));
+
       loadMNistData(set, validationSet);
+
       tm.report;
 
-      Assert(set.size > 100, "not enough train data: " & set.size'Image);
+      Assert(set.size > 10, "not enough train data: " & set.size'Image);
+      Assert(validationSet.size > 10, "not enough test data: " & validationSet.size'Image);
 
-      config.act := NeuralNet.RELU;
+      config.act := NeuralNet.LOGISTIC;
       config.inputSize := TrainingData.blockArea;
-      config.lr := 0.2;
-      config.sizes := (1 => 100);
+      config.lr := 0.7;
+      config.sizes := (1 => 25);
 
       dnn := NNClassifier.create(config          => config,
                                  numberOfClasses => 10);
@@ -125,7 +131,11 @@ package body TrainingSetTests is
       Ada.Text_IO.Put_Line("Inference...");
       tm.reset;
       for lab of validationSet.labels loop
+         --  MathUtils.print(validationSet.values.data(di));
+         Ada.Text_IO.Put_Line("inf result:");
          pred := dnn.classify(validationSet.values.data(di));
+         MathUtils.print(pred);
+         Ada.Text_IO.Put_Line("-");
          for idx in pred.First_Index .. pred.Last_Index loop
             if idx /= lab + 1 then
                if pred(idx) > pred(lab + 1) then
@@ -143,8 +153,8 @@ package body TrainingSetTests is
       begin
          acc := Float(validationSet.size - failedPredictions) / Float(validationSet.size);
          Ada.Text_IO.Put_Line("Model accuracy: " & acc'Image);
-         -- require > 90% accuracy
-         Assert(acc > 0.9, "total: " & validationSet.size'Image & ", failed: " & failedPredictions'Image);
+         -- require > 75% accuracy
+         Assert(acc > 0.75, "total: " & validationSet.size'Image & ", failed: " & failedPredictions'Image);
       end;
 
    end testTrainInput;

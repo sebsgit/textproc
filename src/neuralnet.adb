@@ -148,32 +148,30 @@ package body NeuralNet is
 
       -- error propagation
       declare
-         current_layer: Positive := nn.layers.Last_Index;
-         next_to_current: Positive := nn.layers.Last_Index;
+         current_layer: Natural := nn.layers.Last_Index - 1;
+         next_to_current: Natural := nn.layers.Last_Index;
       begin
-         while current_layer > nn.layers.First_Index loop
+         while current_layer >= nn.layers.First_Index loop
+            declare
+               current_layer_ref: NeuronVecPkg.Vector renames nn.layers(current_layer);
+               next_layer_ref: NeuronVecPkg.Vector renames nn.layers(next_to_current);
+               current_layer_grad_ref: MathUtils.Vector renames nn.gradients(current_layer);
+               next_layer_grad_ref: MathUtils.Vector renames nn.gradients(next_to_current);
+            begin
+               for id in current_layer_ref.First_Index .. current_layer_ref.Last_Index loop
+                  declare
+                     n: Neuron renames current_layer_ref(id);
+                  begin
+                     current_layer_grad_ref(id) := 0.0;
+                     for next_id in next_layer_ref.First_Index .. next_layer_ref.Last_Index loop
+                        current_layer_grad_ref(id) := current_layer_grad_ref(id) + next_layer_ref(next_id).w(id) * next_layer_grad_ref(next_id);
+                     end loop;
+                     current_layer_grad_ref(id) := current_layer_grad_ref(id) * derivative(n, n.z);
+                  end;
+               end loop;
+            end;
             current_layer := current_layer - 1;
-            if current_layer /= nn.layers.First_Index then
-               declare
-                  current_layer_ref: NeuronVecPkg.Vector renames nn.layers(current_layer);
-                  next_layer_ref: NeuronVecPkg.Vector renames nn.layers(next_to_current);
-                  current_layer_grad_ref: MathUtils.Vector renames nn.gradients(current_layer);
-                  next_layer_grad_ref: MathUtils.Vector renames nn.gradients(next_to_current);
-               begin
-                  for id in current_layer_ref.First_Index .. current_layer_ref.Last_Index loop
-                     declare
-                        n: Neuron renames current_layer_ref(id);
-                     begin
-                        current_layer_grad_ref(id) := 0.0;
-                        for next_id in next_layer_ref.First_Index .. next_layer_ref.Last_Index loop
-                           current_layer_grad_ref(id) := current_layer_grad_ref(id) + next_layer_ref(next_id).w(id) * next_layer_grad_ref(next_id);
-                        end loop;
-                        current_layer_grad_ref(id) := current_layer_grad_ref(id) * derivative(n, n.z);
-                     end;
-                  end loop;
-               end;
-               next_to_current := next_to_current - 1;
-            end if;
+            next_to_current := next_to_current - 1;
          end loop;
       end;
 
@@ -210,6 +208,15 @@ package body NeuralNet is
    begin
       res := nn.forward(input);
       nn.backward(input, target);
+      if False then
+         for n of nn.layers(2) loop
+            print(n);
+            --  Ada.Text_IO.Put_Line("");
+            --   MathUtils.print(nn.gradients(1));
+            Ada.Text_IO.Put_Line("");
+         end loop;
+         Ada.Text_IO.Put_Line("-");
+      end if;
    end train;
 
 end NeuralNet;
