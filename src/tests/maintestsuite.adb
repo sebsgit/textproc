@@ -11,6 +11,7 @@ with DataBatchTests;
 with NNClassifierTests;
 with TrainingSetTests;
 with CSVTests;
+with OpenCLTests;
 
 package body MainTestSuite is
    use AUnit.Test_Suites;
@@ -27,9 +28,11 @@ package body MainTestSuite is
    dataBatchTestCase: aliased DataBatchTests.TestCase;
    nnClassifyTestCase: aliased NNClassifierTests.TestCase;
    trainSetTestCase: aliased TrainingSetTests.TestCase;
+   openclTestCase: aliased OpenCLTests.TestCase;
 
    function Suite return Access_Test_Suite is
    begin
+      Add_Test(suiteObject'Access, openclTestCase'Access);
       Add_Test(suiteObject'Access, csvTestCase'Access);
       Add_Test(suiteObject'Access, imageTestCase'Access);
       Add_Test(suiteObject'Access, shapeTestCase'Access);
