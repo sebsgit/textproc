@@ -23,6 +23,7 @@ package body opencl is
 
    clGetPlatformIDs_addr: System.Address;
    clGetPlatformInfo_addr: System.Address;
+   clGetDeviceIDs_addr: System.Address;
 
    function To_Ada(s: in C_Char_Buffer; size: Interfaces.C.size_t) return String is
       result: String(1 .. Integer(size)) := (others => ASCII.NUL);
@@ -40,6 +41,7 @@ package body opencl is
       if result then
          clGetPlatformIDs_addr := dl_loader.Get_Symbol(cl_lib_handle, "clGetPlatformIDs");
          clGetPlatformInfo_addr := dl_loader.Get_Symbol(cl_lib_handle, "clGetPlatformInfo");
+         clGetDeviceIDs_addr := dl_loader.Get_Symbol(cl_lib_handle, "clGetDeviceIDs");
       end if;
       return (if result then SUCCESS else INVALID_VALUE);
    end Init;
@@ -50,7 +52,7 @@ package body opencl is
         Address => clGetPlatformIDs_addr,
         Convention => C;
 
-      num_platforms: aliased Interfaces.C.unsigned;
+      num_platforms: aliased Interfaces.C.unsigned := 0;
       platforms_ptr: aliased C_Address_Array := (others => 0);
       cl_code: Interfaces.C.int;
       current_index: Interfaces.C.size_t := 1;
@@ -104,5 +106,35 @@ package body opencl is
          result := To_Ada(string_ret, size_ret - 1);
       end return;
    end Get_Platform_Info;
+
+   function Get_Devices(id: in Platform_ID; dev_type: in Device_Type; result_status: out Status) return Devices is
+      null_devices: constant Devices(1 .. 0) := (others => 0);
+
+      function Impl(p: Raw_Address; dev_t: Interfaces.C.unsigned; num_entries: Interfaces.C.unsigned; out_devices: System.Address; num_devs: access Interfaces.C.unsigned)
+                    return Interfaces.C.int
+        with Import,
+        Address => clGetDeviceIDs_addr,
+        Convention => C;
+
+      num_devices: aliased Interfaces.C.unsigned := 0;
+      device_ids: aliased C_Address_Array := (others => 0);
+      cl_res: Interfaces.C.int;
+   begin
+      cl_res := Impl(p           => Raw_Address(id),
+                     dev_t       => Device_Type'Enum_Rep(dev_type),
+                     num_entries => device_ids'Length,
+                     out_devices => C_Addr_Arr_Conv.To_Address(device_ids'Unchecked_Access),
+                     num_devs    => num_devices'Access);
+      result_status := Status'Enum_Val(cl_res);
+      if result_status = SUCCESS then
+         return devs: Devices(1 .. Integer(num_devices)) do
+            for idx in 1 .. num_devices loop
+               devs(Integer(idx)) := Device_ID(device_ids(Interfaces.C.size_t(idx)));
+            end loop;
+         end return;
+      end if;
+
+      return null_devices;
+   end Get_Devices;
 
 end opencl;
