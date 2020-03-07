@@ -73,6 +73,18 @@ package body OpenCLTests is
 
                         Assert(cl_status = opencl.SUCCESS, "can't create context");
 
+                        declare
+                           prog_source: constant String := "__kernel__ void empty_kernel() {}";
+                           prog_id: constant opencl.Program_ID := opencl.Create_Program(ctx           => ctx_id,
+                                                                                        source        => prog_source,
+                                                                                        result_status => cl_status);
+                        begin
+                           Assert(cl_status = opencl.SUCCESS, "create program");
+
+                           cl_status := opencl.Release_Program(prog_id);
+                           Assert(cl_status = opencl.SUCCESS, "release program");
+                        end;
+
                         cl_status := opencl.Release_Context(ctx_id);
                         Assert(cl_status = opencl.SUCCESS, "can't release context");
                      end;

@@ -13,4 +13,8 @@ package opencl_api_spec is
    clCreateContext: System.Address;
    clReleaseContext: System.Address;
 
+   clCreateProgramWithSource: System.Address;
+   clBuildProgram: System.Address;
+   clReleaseProgram: System.Address;
+
 end opencl_api_spec;

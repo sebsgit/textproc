@@ -25,6 +25,8 @@ package opencl is
 
    type Context_ID is new Raw_Address;
 
+   type Program_ID is new Raw_Address;
+
    type Platform_Info is (PLATFORM_PROFILE, PLATFORM_VERSION, PLATFORM_NAME, PLATFORM_VENDOR, PLATFORM_EXTENSIONS);
    for Platform_Info use (PLATFORM_PROFILE => cl_h.CL_PLATFORM_PROFILE,
                           PLATFORM_VERSION => cl_h.CL_PLATFORM_VERSION,
@@ -64,6 +66,11 @@ package opencl is
    function Create_Context(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context_ID
      with Pre => context_platform /= 0 and context_device /= 0;
    function Release_Context(id: in Context_ID) return Status
+     with Pre => id /= 0;
+
+   function Create_Program(ctx: in Context_ID; source: in String; result_status: out Status) return Program_ID
+     with Pre => ctx /= 0 and source'Length > 0;
+   function Release_Program(id: in Program_ID) return Status
      with Pre => id /= 0;
 
 end opencl;

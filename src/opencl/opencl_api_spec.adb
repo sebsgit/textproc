@@ -10,6 +10,10 @@ package body opencl_api_spec is
       clCreateContext := dl_loader.Get_Symbol(h, "clCreateContext");
       clReleaseContext := dl_loader.Get_Symbol(h, "clReleaseContext");
 
+      clCreateProgramWithSource := dl_loader.Get_Symbol(h, "clCreateProgramWithSource");
+      clBuildProgram := dl_loader.Get_Symbol(h, "clBuildProgram");
+      clReleaseProgram := dl_loader.Get_Symbol(h, "clReleaseProgram");
+
       return True;
    end;
 end opencl_api_spec;

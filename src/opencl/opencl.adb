@@ -1,5 +1,6 @@
 with Ada.Text_IO;
 with Interfaces.C; use Interfaces.C;
+with Interfaces.C.Strings;
 with System; use System;
 with System.Address_Image;
 with System.Address_To_Access_Conversions;
@@ -13,6 +14,7 @@ package body opencl is
 
    type C_Address_Array is array (Interfaces.C.size_t range 1 .. 64) of aliased Raw_Address;
    type C_Char_Buffer is array (Interfaces.C.size_t range 1 .. 1024) of aliased Interfaces.C.char;
+   type C_SizeT_Array is array (Interfaces.C.size_t range 1 .. 64) of aliased Interfaces.C.size_t;
    type Context_Property is new Long_Long_Integer;
 
    pragma Convention (Convention => C,
@@ -22,6 +24,7 @@ package body opencl is
 
    package C_Addr_Arr_Conv is new System.Address_To_Access_Conversions(Object => C_Address_Array);
    package C_Char_Buff_Conv is new System.Address_To_Access_Conversions(Object => C_Char_Buffer);
+   package C_SizeT_Arr_Conv is new System.Address_To_Access_Conversions(Object => C_SizeT_Array);
 
    cl_lib_handle: dl_loader.Handle;
 
@@ -210,5 +213,39 @@ package body opencl is
       cl_code := Impl(Raw_Address(id));
       return Status'Enum_Val(cl_code);
    end Release_Context;
+
+   function Create_Program(ctx: in Context_ID; source: in String; result_status: out Status) return Program_ID is
+      function Impl(ctx: Raw_Address; count: Interfaces.C.unsigned; strs: access Interfaces.C.Strings.chars_ptr; lengths: System.Address; err_code: access Interfaces.C.int) return Raw_Address
+        with Import,
+        Address => clCreateProgramWithSource,
+        Convention => C;
+      prog_id: Raw_Address := 0;
+      err_code: aliased Interfaces.C.int := 0;
+      lengths: aliased C_SizeT_Array := (others => 0);
+      source_ptr: aliased Interfaces.C.Strings.chars_ptr;
+   begin
+      lengths(1) := source'Length;
+      source_ptr := Interfaces.C.Strings.New_String(Str => source);
+
+      prog_id := Impl(ctx      => Raw_Address(ctx),
+                      count    => 1,
+                      strs     => source_ptr'Access,
+                      lengths  => C_SizeT_Arr_Conv.To_Address(lengths'Unchecked_Access),
+                      err_code => err_code'Access);
+      result_status := Status'Enum_Val(err_code);
+      Interfaces.C.Strings.Free(Item => source_ptr);
+      return Program_ID(prog_id);
+   end Create_Program;
+
+   function Release_Program(id: in Program_ID) return Status is
+      function Impl(p: Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clReleaseProgram,
+        Convention => C;
+      cl_code: Interfaces.C.int := 0;
+   begin
+      cl_code := Impl(Raw_Address(id));
+      return Status'Enum_Val(cl_code);
+   end Release_Program;
 
 end opencl;
