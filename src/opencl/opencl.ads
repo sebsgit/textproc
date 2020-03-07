@@ -13,6 +13,7 @@ package opencl is
                    OUT_OF_HOST_MEMORY => cl_h.CL_OUT_OF_HOST_MEMORY);
 
    type Raw_Address is mod System.Memory_Size;
+
    pragma Convention (Convention => C,
                       Entity     => Raw_Address);
 
@@ -21,6 +22,8 @@ package opencl is
 
    type Device_ID is new Raw_Address;
    type Devices is array (Natural range <>) of Device_ID;
+
+   type Context_ID is new Raw_Address;
 
    type Platform_Info is (PLATFORM_PROFILE, PLATFORM_VERSION, PLATFORM_NAME, PLATFORM_VENDOR, PLATFORM_EXTENSIONS);
    for Platform_Info use (PLATFORM_PROFILE => cl_h.CL_PLATFORM_PROFILE,
@@ -37,6 +40,11 @@ package opencl is
                         DEVICE_TYPE_CUSTOM => cl_h.CL_DEVICE_TYPE_CUSTOM,
                         DEVICE_TYPE_ALL => cl_h.CL_DEVICE_TYPE_ALL);
 
+   type Device_Info_Bool is (DEVICE_AVAILABLE);
+   type Device_Info_String is (DEVICE_NAME);
+   for Device_Info_Bool use (DEVICE_AVAILABLE => cl_h.CL_DEVICE_AVAILABLE);
+   for Device_Info_String use (DEVICE_NAME => cl_h.CL_DEVICE_NAME);
+
    function Init(path: String) return Status;
 
    function Get_Platforms(result_status: out Status) return Platforms;
@@ -44,6 +52,10 @@ package opencl is
      with Pre => id /= 0;
 
    function Get_Devices(id: in Platform_ID; dev_type: in Device_Type; result_status: out Status) return Devices
+     with Pre => id /= 0;
+   function Get_Device_Info(id: in Device_ID; info: in Device_Info_Bool; result_status: out Status) return Boolean
+     with Pre => id /= 0;
+   function Get_Device_Info(id: in Device_ID; info: in Device_Info_String; result_status: out Status) return String
      with Pre => id /= 0;
 
 end opencl;

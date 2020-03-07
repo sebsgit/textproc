@@ -4,12 +4,16 @@ with System; use System;
 with System.Address_Image;
 with System.Address_To_Access_Conversions;
 
+with opencl_api_spec;
 with dl_loader;
 
 package body opencl is
 
+   use opencl_api_spec;
+
    type C_Address_Array is array (Interfaces.C.size_t range 1 .. 64) of aliased Raw_Address;
    type C_Char_Buffer is array (Interfaces.C.size_t range 1 .. 1024) of aliased Interfaces.C.char;
+   type Context_Property is new Long_Long_Integer;
 
    pragma Convention (Convention => C,
                       Entity     => C_Address_Array);
@@ -20,10 +24,6 @@ package body opencl is
    package C_Char_Buff_Conv is new System.Address_To_Access_Conversions(Object => C_Char_Buffer);
 
    cl_lib_handle: dl_loader.Handle;
-
-   clGetPlatformIDs_addr: System.Address;
-   clGetPlatformInfo_addr: System.Address;
-   clGetDeviceIDs_addr: System.Address;
 
    function To_Ada(s: in C_Char_Buffer; size: Interfaces.C.size_t) return String is
       result: String(1 .. Integer(size)) := (others => ASCII.NUL);
@@ -39,9 +39,7 @@ package body opencl is
    begin
       result := dl_loader.Open(path, cl_lib_handle);
       if result then
-         clGetPlatformIDs_addr := dl_loader.Get_Symbol(cl_lib_handle, "clGetPlatformIDs");
-         clGetPlatformInfo_addr := dl_loader.Get_Symbol(cl_lib_handle, "clGetPlatformInfo");
-         clGetDeviceIDs_addr := dl_loader.Get_Symbol(cl_lib_handle, "clGetDeviceIDs");
+         result := opencl_api_spec.Load_From(cl_lib_handle);
       end if;
       return (if result then SUCCESS else INVALID_VALUE);
    end Init;
@@ -49,7 +47,7 @@ package body opencl is
    function Get_Platforms(result_status: out Status) return Platforms is
       function Impl(num_entries_p: Interfaces.C.unsigned; platforms_ptr_p: System.Address; num_platforms_p: access Interfaces.C.unsigned) return Interfaces.C.int
         with Import,
-        Address => clGetPlatformIDs_addr,
+        Address => clGetPlatformIDs,
         Convention => C;
 
       num_platforms: aliased Interfaces.C.unsigned := 0;
@@ -58,7 +56,7 @@ package body opencl is
       current_index: Interfaces.C.size_t := 1;
       null_platforms: constant Platforms(1 .. 0) := (others => 0);
    begin
-      if clGetPlatformIDs_addr = System.Null_Address then
+      if clGetPlatformIDs = System.Null_Address then
          result_status := INVALID_PLATFORM;
          return null_platforms;
       end if;
@@ -88,7 +86,7 @@ package body opencl is
                     return Interfaces.C.int
         with
           Import,
-          Address => clGetPlatformInfo_addr,
+          Address => clGetPlatformInfo,
           Convention => C;
 
       cl_code: Interfaces.C.Int;
@@ -102,9 +100,7 @@ package body opencl is
                       size_ret'Access);
       result_status := Status'Enum_Val(cl_code);
 
-      return result: String(1 .. Integer(size_ret - 1)) do
-         result := To_Ada(string_ret, size_ret - 1);
-      end return;
+      return To_Ada(string_ret, size_ret - 1);
    end Get_Platform_Info;
 
    function Get_Devices(id: in Platform_ID; dev_type: in Device_Type; result_status: out Status) return Devices is
@@ -113,7 +109,7 @@ package body opencl is
       function Impl(p: Raw_Address; dev_t: Interfaces.C.unsigned; num_entries: Interfaces.C.unsigned; out_devices: System.Address; num_devs: access Interfaces.C.unsigned)
                     return Interfaces.C.int
         with Import,
-        Address => clGetDeviceIDs_addr,
+        Address => clGetDeviceIDs,
         Convention => C;
 
       num_devices: aliased Interfaces.C.unsigned := 0;
@@ -136,5 +132,46 @@ package body opencl is
 
       return null_devices;
    end Get_Devices;
+
+   function Get_Device_Info(id: in Device_ID; info: in Device_Info_Bool; result_status: out Status) return Boolean is
+      function Impl(p: Raw_Address; dev_i: Interfaces.C.unsigned; res_size: Interfaces.C.size_t; out_info: access Interfaces.C.unsigned; info_len: System.Address) return Interfaces.C.int
+        with Import,
+        Address => clGetDeviceInfo,
+        Convention => C;
+
+      flag_value: aliased Interfaces.C.unsigned := 0;
+      cl_status: Interfaces.C.int := 0;
+   begin
+      cl_status := Impl(p         => Raw_Address(id),
+                        dev_i     => Device_Info_Bool'Enum_Rep(info),
+                        res_size => Interfaces.C.unsigned'Size,
+                        out_info  => flag_value'Access,
+                        info_len  => System.Null_Address);
+      result_status := Status'Enum_Val(cl_status);
+      return (if flag_value = 0 then False else True);
+   end Get_Device_Info;
+
+   function Get_Device_Info(id: in Device_ID; info: in Device_Info_String; result_status: out Status) return String is
+      function Impl(p: Raw_Address; dev_i: Interfaces.C.unsigned; res_size: Interfaces.C.size_t; out_info: System.Address; info_len: access Interfaces.C.size_t) return Interfaces.C.int
+        with Import,
+        Address => clGetDeviceInfo,
+        Convention => C;
+
+      null_string: constant String(1 .. 0) := (others => ' ');
+      cl_status: Interfaces.C.int := 0;
+      buffer: aliased C_Char_Buffer;
+      actual_length: aliased Interfaces.C.size_t := 0;
+   begin
+      cl_status := Impl(p         => Raw_Address(id),
+                        dev_i     => Device_Info_String'Enum_Rep(info),
+                        res_size => buffer'Length,
+                        out_info  => C_Char_Buff_Conv.To_Address(buffer'Unchecked_Access),
+                        info_len  => actual_length'Access);
+      result_status := Status'Enum_Val(cl_status);
+      if result_status = SUCCESS then
+         return To_Ada(buffer, actual_length - 1);
+      end if;
+      return null_string;
+   end Get_Device_Info;
 
 end opencl;

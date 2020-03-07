@@ -55,11 +55,20 @@ package body OpenCLTests is
                Assert(p_name'Length > 0, "invalid platform name");
                Ada.Text_IO.Put_Line("Platform: -> " & p_name);
                declare
-                  devs: constant opencl.Devices := opencl.Get_Devices(id            => p,
-                                                                      dev_type      => opencl.DEVICE_TYPE_ALL,
-                                                                      result_status => cl_status);
+                  dev_ids: constant opencl.Devices := opencl.Get_Devices(id            => p,
+                                                                         dev_type      => opencl.DEVICE_TYPE_ALL,
+                                                                         result_status => cl_status);
                begin
-                  Assert(devs'Length > 0, "no devices");
+                  Assert(dev_ids'Length > 0, "no devices");
+                  for d_id of dev_ids loop
+                     declare
+                        d_name: constant String := opencl.Get_Device_Info(id            => d_id,
+                                                                          info          => opencl.DEVICE_NAME,
+                                                                          result_status => cl_status);
+                     begin
+                        Ada.Text_IO.Put_Line("--> device: " & d_name);
+                     end;
+                  end loop;
                end;
             end;
          end loop;
