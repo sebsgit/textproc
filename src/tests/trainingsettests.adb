@@ -9,6 +9,7 @@ with MathUtils;
 with NeuralNet;
 with NNClassifier;
 with Timer;
+with ImageIO;
 with CSV;
 
 use Ada.Containers;
@@ -89,6 +90,29 @@ package body TrainingSetTests is
       load(validation, testSetSize);
    end loadMNistData;
 
+   procedure saveToFile(data: MathUtils.Vector; path: String)
+     with Pre => Positive(data.Length) = TrainingData.blockArea
+   is
+      image: PixelArray.ImagePlane;
+      saveResult: Boolean;
+   begin
+      image := PixelArray.allocate(width  => TrainingData.blockSize,
+                                   height => TrainingData.blockSize);
+      for y in 0 .. image.height - 1 loop
+         for x in 0 .. image.width - 1 loop
+            declare
+               id: constant Positive := y * image.width + x + 1;
+            begin
+               image.set(x  => x,
+                         y  => y,
+                         px => PixelArray.Pixel(255.0 * data(id)));
+            end;
+         end loop;
+      end loop;
+      saveResult := ImageIO.save(filename => path,
+                                 image    => image);
+   end saveToFile;
+
    procedure testTrainInput(T : in out Test_Cases.Test_Case'Class) is
       set: TrainingData.Set;
       validationSet: TrainingData.Set;
@@ -103,7 +127,7 @@ package body TrainingSetTests is
    begin
       Ada.Text_IO.Put_Line("Load training set...");
       tm := Timer.start;
-      --  set.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set/"));
+      -- set.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set/"));
       -- tm.report;
       -- validationSet.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set_test_cases/"));
 
@@ -117,12 +141,13 @@ package body TrainingSetTests is
       config.act := NeuralNet.LOGISTIC;
       config.inputSize := TrainingData.blockArea;
       config.lr := 0.7;
-      config.sizes := (1 => 25);
+      config.sizes := (1 => 32);
 
       dnn := NNClassifier.create(config          => config,
                                  numberOfClasses => 10);
 
       Ada.Text_IO.Put_Line("Train the model...");
+
       tm.reset;
       dnn.train(data   => set.values,
                 labels => set.labels);
@@ -132,10 +157,7 @@ package body TrainingSetTests is
       tm.reset;
       for lab of validationSet.labels loop
          --  MathUtils.print(validationSet.values.data(di));
-         Ada.Text_IO.Put_Line("inf result:");
          pred := dnn.classify(validationSet.values.data(di));
-         MathUtils.print(pred);
-         Ada.Text_IO.Put_Line("-");
          for idx in pred.First_Index .. pred.Last_Index loop
             if idx /= lab + 1 then
                if pred(idx) > pred(lab + 1) then

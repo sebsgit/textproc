@@ -54,6 +54,7 @@ package body TrainingData is
       searchObj: Ada.Directories.Search_Type;
       dirEnt: Ada.Directories.Directory_Entry_Type;
       image: PixelArray.ImagePlane;
+      preprocessed: PixelArray.ImagePlane;
       regions: ImageRegions.RegionVector.Vector;
       expectedChars: Ada.Strings.Unbounded.Unbounded_String;
       saveStatus: Boolean;
@@ -69,14 +70,14 @@ package body TrainingData is
          expectedChars := getCharacterString(Ada.Directories.Simple_Name(dirEnt));
 
          image := ImageIO.load(Ada.Directories.Full_Name(dirEnt));
-         image := ShapeDatabase.preprocess(image);
-         regions := ImageRegions.detectRegions(image);
+         preprocessed := ShapeDatabase.preprocess(image);
+         regions := ImageRegions.detectRegions(preprocessed);
          filterRegions(regions);
          ImageRegions.sortRegions(regions);
 
          if Natural(regions.Length) /= Ada.Strings.Unbounded.Length(expectedChars) then
             saveStatus := ImageIO.save(filename => "debug_region_error.jpg",
-                                       image    => image);
+                                       image    => preprocessed);
             raise Ada.IO_Exceptions.Data_Error with "Training set error - expected " & Ada.Strings.Unbounded.Length(expectedChars)'Image & " regions, got " & Natural(regions.Length)'Image;
          end if;
 
@@ -85,16 +86,19 @@ package body TrainingData is
             id: Positive := 1;
             cut: PixelArray.ImagePlane;
             label: Natural;
+            margin: Positive;
          begin
             for r of regions loop
-               cut := image.cut(x => r.area.x,
-                                y => r.area.y,
-                                w => r.area.width,
-                                h => r.area.height);
+               margin := r.area.width / 3;
+               cut := preprocessed.cut(x => r.area.x,
+                                       y => r.area.y,
+                                       w => r.area.width,
+                                       h => r.area.height);
+               cut := cut.expand(margin, margin, PixelArray.Background);
                cut := cut.rescale(blockSize, blockSize);
                label := Natural'Value((1 => Ada.Strings.Unbounded.Element(expectedChars, id)));
                data.labels.Append(label);
-               data.values.append(toDataVector(cut));
+               data.values.append(toDataVector(cut, invertPixels => True));
                id := id + 1;
             end loop;
          end;
@@ -103,12 +107,16 @@ package body TrainingData is
       Ada.Directories.End_Search(Search => searchObj);
    end loadFrom;
 
-   function toDataVector(img: in PixelArray.ImagePlane) return MathUtils.Vector is
+   function toDataVector(img: in PixelArray.ImagePlane; invertPixels: Boolean := False) return MathUtils.Vector is
       result: MathUtils.Vector;
    begin
       for y in 0 .. img.height - 1 loop
          for x in 0 .. img.width - 1 loop
-            result.Append(Float(img.get(x, y)) / 255.0);
+            declare
+               px: constant Float := Float(img.get(x, y)) / 255.0;
+            begin
+               result.Append(if invertPixels then 1.0 - px else px);
+            end;
          end loop;
       end loop;
       return result;

@@ -80,6 +80,20 @@ package body PixelArray is
       return result;
    end;
 
+   function expand(img: in ImagePlane; w_margin, h_margin: in Positive; color: Pixel) return ImagePlane is
+      result: ImagePlane;
+   begin
+      result := allocate(img.width + 2 * w_margin, img.height + 2 * h_margin);
+      result.set(color);
+      for y in h_margin .. img.height + h_margin - 1 loop
+         for x in w_margin .. img.width + w_margin - 1 loop
+            result.set(x, y, img.get(x - w_margin, y - h_margin));
+         end loop;
+      end loop;
+      return result;
+   end expand;
+
+
    function cut(img: in ImagePlane; x, y: in Natural; w, h: in Positive) return ImagePlane is
       result: ImagePlane;
       xr: Natural := 0;

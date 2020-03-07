@@ -23,7 +23,7 @@ package TrainingData is
    procedure add(data: in out Set; label: Natural; vec: MathUtils.Vector);
    procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String);
 
-   function toDataVector(img: in PixelArray.ImagePlane) return MathUtils.Vector
+   function toDataVector(img: in PixelArray.ImagePlane; invertPixels: Boolean := False) return MathUtils.Vector
      with Post => Natural(toDataVector'Result.Length) = img.width * img.height;
 
 end TrainingData;

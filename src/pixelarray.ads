@@ -41,6 +41,9 @@ package PixelArray is
    function rescale(img: in ImagePlane; w, h: in Positive) return ImagePlane
      with Post => rescale'Result.width = w and rescale'Result.height = h;
 
+   function expand(img: in ImagePlane; w_margin, h_margin: in Positive; color: Pixel) return ImagePlane
+     with Post => expand'Result.width = 2 * w_margin + img.width and expand'Result.height = 2 * h_margin + img.height;
+
    function cut(img: in ImagePlane; x, y: in Natural; w, h: in Positive) return ImagePlane
      with Pre => (x < img.width and y < img.height) and (w <= img.width and h <= img.height),
      Post => cut'Result.width = w and cut'Result.height = h,
