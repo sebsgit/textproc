@@ -174,4 +174,41 @@ package body opencl is
       return null_string;
    end Get_Device_Info;
 
+   function Create_Context(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context_ID is
+      function Impl(ctx_props: System.Address; num_devs: Interfaces.C.unsigned; devs: System.Address; cb: System.Address; user_data: System.Address; err_code: access Interfaces.C.int)
+                    return Raw_Address
+        with Import,
+        Address => clCreateContext,
+        Convention => C;
+
+      properties: aliased C_Address_Array := (others => 0);
+      dev_ids: aliased C_Address_Array := (others => 0);
+      err_code: aliased Interfaces.C.int := 0;
+      ctx_id: Raw_Address := 0;
+   begin
+      dev_ids(1) := Raw_Address(context_device);
+      properties(1) := Raw_Address(Context_Properties'Enum_Rep(CONTEXT_PROP_PLATFORM));
+      properties(2) := Raw_Address(context_platform);
+
+      ctx_id := Impl(ctx_props => C_Addr_Arr_Conv.To_Address(properties'Unchecked_Access),
+                     num_devs  => 1,
+                     devs      => C_Addr_Arr_Conv.To_Address(dev_ids'Unchecked_Access),
+                     cb        => System.Null_Address,
+                     user_data => System.Null_Address,
+                     err_code  => err_code'Access);
+      result_status := Status'Enum_Val(err_code);
+      return Context_ID(ctx_id);
+   end Create_Context;
+
+   function Release_Context(id: in Context_ID) return Status is
+      function Impl(p: Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clReleaseContext,
+        Convention => C;
+      cl_code: Interfaces.C.int := 0;
+   begin
+      cl_code := Impl(Raw_Address(id));
+      return Status'Enum_Val(cl_code);
+   end Release_Context;
+
 end opencl;

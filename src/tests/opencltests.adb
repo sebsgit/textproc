@@ -65,8 +65,16 @@ package body OpenCLTests is
                         d_name: constant String := opencl.Get_Device_Info(id            => d_id,
                                                                           info          => opencl.DEVICE_NAME,
                                                                           result_status => cl_status);
+                        ctx_id: constant opencl.Context_ID := opencl.Create_Context(context_platform => p,
+                                                                                    context_device   => d_id,
+                                                                                    result_status    => cl_status);
                      begin
                         Ada.Text_IO.Put_Line("--> device: " & d_name);
+
+                        Assert(cl_status = opencl.SUCCESS, "can't create context");
+
+                        cl_status := opencl.Release_Context(ctx_id);
+                        Assert(cl_status = opencl.SUCCESS, "can't release context");
                      end;
                   end loop;
                end;

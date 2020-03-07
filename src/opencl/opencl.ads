@@ -45,6 +45,9 @@ package opencl is
    for Device_Info_Bool use (DEVICE_AVAILABLE => cl_h.CL_DEVICE_AVAILABLE);
    for Device_Info_String use (DEVICE_NAME => cl_h.CL_DEVICE_NAME);
 
+   type Context_Properties is (CONTEXT_PROP_PLATFORM);
+   for Context_Properties use (CONTEXT_PROP_PLATFORM => cl_h.CL_CONTEXT_PLATFORM);
+
    function Init(path: String) return Status;
 
    function Get_Platforms(result_status: out Status) return Platforms;
@@ -56,6 +59,11 @@ package opencl is
    function Get_Device_Info(id: in Device_ID; info: in Device_Info_Bool; result_status: out Status) return Boolean
      with Pre => id /= 0;
    function Get_Device_Info(id: in Device_ID; info: in Device_Info_String; result_status: out Status) return String
+     with Pre => id /= 0;
+
+   function Create_Context(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context_ID
+     with Pre => context_platform /= 0 and context_device /= 0;
+   function Release_Context(id: in Context_ID) return Status
      with Pre => id /= 0;
 
 end opencl;
