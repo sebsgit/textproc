@@ -237,6 +237,62 @@ package body opencl is
       return Program_ID(prog_id);
    end Create_Program;
 
+   function Build_Program(id: in Program_ID; device: in Device_ID; options: in String) return Status is
+      function Impl(p_id: Raw_Address;
+                    num_devices: Interfaces.C.unsigned;
+                    device_list: System.Address;
+                    options: Interfaces.C.Strings.char_array_access;
+                    user_cb: System.Address;
+                    user_data:  System.Address) return Interfaces.C.int
+        with Import,
+        Address => clBuildProgram,
+        Convention => C;
+
+      cl_code: Interfaces.C.int := 0;
+      device_array: aliased C_Address_Array := (others => 0);
+      opts: aliased Interfaces.C.char_array := Interfaces.C.To_C(options);
+   begin
+      device_array(1) := Raw_Address(device);
+      cl_code := Impl(p_id        => Raw_Address(id),
+                      num_devices => 1,
+                      device_list => C_Addr_Arr_Conv.To_Address(device_array'Unchecked_Access),
+                      options     => opts'Unchecked_Access,
+                      user_cb     => System.Null_Address,
+                      user_data   => System.Null_Address);
+      return Status'Enum_Val(cl_code);
+   end Build_Program;
+
+   function Get_Program_Build_Log(id: in Program_ID; device: in Device_ID; result_status: out Status) return String is
+      function Impl(prog: Raw_Address; dev: Raw_Address; info: Interfaces.C.unsigned; available_size: Interfaces.C.size_t; ptr: System.Address; ret_size: access Interfaces.C.size_t) return Interfaces.C.int
+        with Import,
+        Address => clGetProgramBuildInfo,
+        Convention => C;
+      build_log_size: aliased Interfaces.C.size_t;
+      cl_code: Interfaces.C.int := 0;
+   begin
+      cl_code := Impl(prog           => Raw_Address(id),
+                      dev            => Raw_Address(device),
+                      info           => Program_Build_Info_String'Enum_Rep(PROGRAM_BUILD_LOG),
+                      available_size => 0,
+                      ptr            => System.Null_Address,
+                      ret_size       => build_log_size'Access);
+      declare
+         type C_Char_Buff is new Interfaces.C.char_array(1 .. build_log_size);
+         build_log_buffer: aliased C_Char_Buff := (1 .. build_log_size => Interfaces.C.To_C(ASCII.NUL));
+
+         package Char_Arr_Addr_Conv is new System.Address_To_Access_Conversions(Object => C_Char_Buff);
+      begin
+         cl_code := Impl(prog           => Raw_Address(id),
+                         dev            => Raw_Address(device),
+                         info           => Program_Build_Info_String'Enum_Rep(PROGRAM_BUILD_LOG),
+                         available_size => build_log_size,
+                         ptr            => Char_Arr_Addr_Conv.To_Address(build_log_buffer'Unchecked_Access),
+                         ret_size       => build_log_size'Access);
+         result_status := Status'Enum_Val(cl_code);
+         return Interfaces.C.To_Ada(Interfaces.C.char_array(build_log_buffer));
+      end;
+   end Get_Program_Build_Log;
+
    function Release_Program(id: in Program_ID) return Status is
       function Impl(p: Raw_Address) return Interfaces.C.int
         with Import,
@@ -247,5 +303,60 @@ package body opencl is
       cl_code := Impl(Raw_Address(id));
       return Status'Enum_Val(cl_code);
    end Release_Program;
+
+   function Create_Kernel(program: in Program_ID; name: in String; result_status: out Status) return Kernel_ID is
+      function Impl(prog: Raw_Address; name_str: Interfaces.C.Strings.char_array_access; err_c: access Interfaces.C.int) return Raw_Address
+        with Import,
+        Address => clCreateKernel,
+        Convention => C;
+
+      cl_code: aliased Interfaces.C.int := 0;
+      str_ptr: aliased Interfaces.C.char_array := Interfaces.C.To_C(name);
+      result: Raw_Address := 0;
+   begin
+      result := Impl(prog     => Raw_Address(program),
+                     name_str => str_ptr'Unchecked_Access,
+                     err_c    => cl_code'Access);
+      result_status := Status'Enum_Val(cl_code);
+      return Kernel_ID(result);
+   end Create_Kernel;
+
+   function Release_Kernel(id: in Kernel_ID) return Status is
+      function Impl(p: Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clReleaseKernel,
+        Convention => C;
+      cl_code: Interfaces.C.int := 0;
+   begin
+      cl_code := Impl(Raw_Address(id));
+      return Status'Enum_Val(cl_code);
+   end Release_Kernel;
+
+   function Create_Command_Queue(ctx: in Context_ID; dev: in Device_ID; result_status: out Status) return Command_Queue is
+      function Impl(ctx_id: Raw_Address; dev_id: Raw_Address; props: System.Address; err_c: access Interfaces.C.int) return Raw_Address
+        with Import,
+        Address => clCreateCommandQueueWithProperties,
+        Convention => C;
+      cl_code: aliased Interfaces.C.int := 0;
+      result: Raw_Address := 0;
+   begin
+      result := Impl(ctx_id => Raw_Address(ctx),
+                     dev_id => Raw_Address(dev),
+                     props  => System.Null_Address,
+                     err_c  => cl_code'Access);
+      result_status := Status'Enum_Val(cl_code);
+      return Command_Queue(result);
+   end Create_Command_Queue;
+
+   function Release_Command_Queue(id: in Command_Queue) return Status is
+      function Impl(p: Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clReleaseCommandQueue,
+        Convention => C;
+      cl_code: Interfaces.C.int := 0;
+   begin
+      cl_code := Impl(Raw_Address(id));
+      return Status'Enum_Val(cl_code);
+   end Release_Command_Queue;
 
 end opencl;

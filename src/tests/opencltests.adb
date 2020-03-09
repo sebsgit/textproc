@@ -74,15 +74,46 @@ package body OpenCLTests is
                         Assert(cl_status = opencl.SUCCESS, "can't create context");
 
                         declare
-                           prog_source: constant String := "__kernel__ void empty_kernel() {}";
+                           prog_source: constant String := "__kernel void empty_kernel() {}";
                            prog_id: constant opencl.Program_ID := opencl.Create_Program(ctx           => ctx_id,
                                                                                         source        => prog_source,
                                                                                         result_status => cl_status);
+                           queue_status: opencl.Status;
+                           queue_id: constant opencl.Command_Queue := opencl.Create_Command_Queue(ctx           => ctx_id,
+                                                                                                  dev           => d_id,
+                                                                                                  result_status => queue_status);
                         begin
                            Assert(cl_status = opencl.SUCCESS, "create program");
+                           Assert(queue_status = opencl.SUCCESS, "create queue");
+                           cl_status := opencl.Build_Program(id      => prog_id,
+                                                             device  => d_id,
+                                                             options => "-w -Werror");
+                           if cl_status /= opencl.SUCCESS then
+                              declare
+                                 log_status: opencl.Status;
+                              begin
+                                 Ada.Text_IO.Put_Line("Compile log: " & opencl.Get_Program_Build_Log(id            => prog_id,
+                                                                                                     device        => d_id,
+                                                                                                     result_status => log_status));
+                              end;
+                           end if;
+                           Assert(cl_status = opencl.SUCCESS, "Build program");
+
+                           declare
+                              kernel: constant Kernel_ID := opencl.Create_Kernel(program       => prog_id,
+                                                                                 name          => "empty_kernel",
+                                                                                 result_status => cl_status);
+                           begin
+                              Assert(cl_status = opencl.SUCCESS, "create kernel");
+
+                              cl_status := opencl.Release_Kernel(kernel);
+                              Assert(cl_status = opencl.SUCCESS, "release kernel");
+                           end;
 
                            cl_status := opencl.Release_Program(prog_id);
                            Assert(cl_status = opencl.SUCCESS, "release program");
+                           queue_status := opencl.Release_Command_Queue(queue_id);
+                           Assert(queue_status = opencl.SUCCESS, "release queue");
                         end;
 
                         cl_status := opencl.Release_Context(ctx_id);

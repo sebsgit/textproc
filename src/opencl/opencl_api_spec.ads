@@ -15,6 +15,13 @@ package opencl_api_spec is
 
    clCreateProgramWithSource: System.Address;
    clBuildProgram: System.Address;
+   clGetProgramBuildInfo: System.Address;
    clReleaseProgram: System.Address;
+
+   clCreateKernel: System.Address;
+   clReleaseKernel: System.Address;
+
+   clCreateCommandQueueWithProperties: System.Address;
+   clReleaseCommandQueue: System.Address;
 
 end opencl_api_spec;

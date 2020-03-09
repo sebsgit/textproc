@@ -6,11 +6,12 @@ package opencl is
                             Post => Check,
                             Type_Invariant => Check);
 
-   type Status is (INVALID_PLATFORM, INVALID_VALUE, OUT_OF_HOST_MEMORY, SUCCESS);
-   for Status use (SUCCESS => cl_h.CL_SUCCESS,
+   type Status is (INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
+   for Status use (INVALID_PLATFORM => cl_h.CL_INVALID_PLATFORM,
                    INVALID_VALUE => cl_h.CL_INVALID_VALUE,
-                   INVALID_PLATFORM => cl_h.CL_INVALID_PLATFORM,
-                   OUT_OF_HOST_MEMORY => cl_h.CL_OUT_OF_HOST_MEMORY);
+                   BUILD_PROGRAM_FAILURE => cl_h.CL_BUILD_PROGRAM_FAILURE,
+                   OUT_OF_HOST_MEMORY => cl_h.CL_OUT_OF_HOST_MEMORY,
+                   SUCCESS => cl_h.CL_SUCCESS);
 
    type Raw_Address is mod System.Memory_Size;
 
@@ -26,6 +27,9 @@ package opencl is
    type Context_ID is new Raw_Address;
 
    type Program_ID is new Raw_Address;
+   type Kernel_ID is new Raw_Address;
+
+   type Command_Queue is new Raw_Address;
 
    type Platform_Info is (PLATFORM_PROFILE, PLATFORM_VERSION, PLATFORM_NAME, PLATFORM_VENDOR, PLATFORM_EXTENSIONS);
    for Platform_Info use (PLATFORM_PROFILE => cl_h.CL_PLATFORM_PROFILE,
@@ -46,6 +50,9 @@ package opencl is
    type Device_Info_String is (DEVICE_NAME);
    for Device_Info_Bool use (DEVICE_AVAILABLE => cl_h.CL_DEVICE_AVAILABLE);
    for Device_Info_String use (DEVICE_NAME => cl_h.CL_DEVICE_NAME);
+
+   type Program_Build_Info_String is (PROGRAM_BUILD_LOG);
+   for Program_Build_Info_String use (PROGRAM_BUILD_LOG => cl_h.CL_PROGRAM_BUILD_LOG);
 
    type Context_Properties is (CONTEXT_PROP_PLATFORM);
    for Context_Properties use (CONTEXT_PROP_PLATFORM => cl_h.CL_CONTEXT_PLATFORM);
@@ -70,7 +77,21 @@ package opencl is
 
    function Create_Program(ctx: in Context_ID; source: in String; result_status: out Status) return Program_ID
      with Pre => ctx /= 0 and source'Length > 0;
+   function Build_Program(id: in Program_ID; device: in Device_ID; options: in String) return Status
+     with Pre => id /= 0 and device /= 0;
+   function Get_Program_Build_Log(id: in Program_ID; device: in Device_ID; result_status: out Status) return String
+     with Pre => id /= 0 and device /= 0;
    function Release_Program(id: in Program_ID) return Status
+     with Pre => id /= 0;
+
+   function Create_Kernel(program: in Program_ID; name: in String; result_status: out Status) return Kernel_ID
+     with Pre => program /= 0 and name'Length > 0;
+   function Release_Kernel(id: in Kernel_ID) return Status
+     with Pre => id /= 0;
+
+   function Create_Command_Queue(ctx: in Context_ID; dev: in Device_ID; result_status: out Status) return Command_Queue
+     with Pre => ctx /= 0 and dev /= 0;
+   function Release_Command_Queue(id: in Command_Queue) return Status
      with Pre => id /= 0;
 
 end opencl;
