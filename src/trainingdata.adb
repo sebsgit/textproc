@@ -4,6 +4,7 @@ with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;
 with Ada.IO_Exceptions;
 with Ada.Containers;
+with Ada.Containers.Vectors;
 
 with ShapeDatabase;
 with ImageIO;
@@ -14,6 +15,8 @@ use Ada.Containers;
 use Ada.Strings.Unbounded;
 
 package body TrainingData is
+   package String_Vec_Pkg is new Ada.Containers.Vectors(Index_Type => Positive, Element_Type => Ada.Strings.Unbounded.Unbounded_String);
+
    function size(data: in Set) return Natural is
    begin
       return data.values.size;
@@ -50,14 +53,66 @@ package body TrainingData is
       end loop;
    end filterRegions;
 
-   procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String) is
-      searchObj: Ada.Directories.Search_Type;
-      dirEnt: Ada.Directories.Directory_Entry_Type;
+   procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String; expectedChars: in Ada.Strings.Unbounded.Unbounded_String) is
       image: PixelArray.ImagePlane;
       preprocessed: PixelArray.ImagePlane;
       regions: ImageRegions.RegionVector.Vector;
-      expectedChars: Ada.Strings.Unbounded.Unbounded_String;
       saveStatus: Boolean;
+   begin
+      image := ImageIO.load(Ada.Strings.Unbounded.To_String(path));
+      preprocessed := ShapeDatabase.preprocess(image);
+      regions := ImageRegions.detectRegions(preprocessed);
+      filterRegions(regions);
+      ImageRegions.sortRegions(regions);
+
+      if Natural(regions.Length) /= Ada.Strings.Unbounded.Length(expectedChars) then
+         saveStatus := ImageIO.save(filename => "debug_region_error.jpg",
+                                    image    => preprocessed);
+         raise Ada.IO_Exceptions.Data_Error with "Training set error - expected " & Ada.Strings.Unbounded.Length(expectedChars)'Image & " regions, got " & Natural(regions.Length)'Image;
+      end if;
+
+      -- cut and rescale the detected regions
+      declare
+         id: Positive := 1;
+         cut: PixelArray.ImagePlane;
+         label: Natural;
+         margin: Positive;
+      begin
+         for r of regions loop
+            margin := r.area.width / 3;
+            cut := preprocessed.cut(x => r.area.x,
+                                    y => r.area.y,
+                                    w => r.area.width,
+                                    h => r.area.height);
+            cut := cut.expand(margin, margin, PixelArray.Background);
+            cut := cut.rescale(blockSize, blockSize);
+            label := Natural'Value((1 => Ada.Strings.Unbounded.Element(expectedChars, id)));
+            data.labels.Append(label);
+            data.values.append(toDataVector(cut, invertPixels => True));
+            id := id + 1;
+         end loop;
+      end;
+   end loadFrom;
+
+   procedure loadFrom(data: in out Set; paths: in String_Vec_Pkg.Vector; expectedCharVector: String_Vec_Pkg.Vector)
+     with Pre => paths.Length = expectedCharVector.Length
+   is
+      currentExpectedCharsIndex: Positive := expectedCharVector.First_Index;
+      expectedChars: Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      for path of paths loop
+         expectedChars := expectedCharVector(currentExpectedCharsIndex);
+         loadFrom(data, path, expectedChars);
+         currentExpectedCharsIndex := currentExpectedCharsIndex + 1;
+      end loop;
+   end loadFrom;
+
+   procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String) is
+      searchObj: Ada.Directories.Search_Type;
+      dirEnt: Ada.Directories.Directory_Entry_Type;
+
+      pathsToLoad: String_Vec_Pkg.Vector;
+      expectedCharsVector: String_Vec_Pkg.Vector;
    begin
       Ada.Directories.Start_Search(Search    => searchObj,
                                    Directory => Ada.Strings.Unbounded.To_String(path),
@@ -67,44 +122,14 @@ package body TrainingData is
          Ada.Directories.Get_Next_Entry(Search          => searchObj,
                                         Directory_Entry => dirEnt);
 
-         expectedChars := getCharacterString(Ada.Directories.Simple_Name(dirEnt));
-
-         image := ImageIO.load(Ada.Directories.Full_Name(dirEnt));
-         preprocessed := ShapeDatabase.preprocess(image);
-         regions := ImageRegions.detectRegions(preprocessed);
-         filterRegions(regions);
-         ImageRegions.sortRegions(regions);
-
-         if Natural(regions.Length) /= Ada.Strings.Unbounded.Length(expectedChars) then
-            saveStatus := ImageIO.save(filename => "debug_region_error.jpg",
-                                       image    => preprocessed);
-            raise Ada.IO_Exceptions.Data_Error with "Training set error - expected " & Ada.Strings.Unbounded.Length(expectedChars)'Image & " regions, got " & Natural(regions.Length)'Image;
-         end if;
-
-         -- cut and rescale the detected regions
-         declare
-            id: Positive := 1;
-            cut: PixelArray.ImagePlane;
-            label: Natural;
-            margin: Positive;
-         begin
-            for r of regions loop
-               margin := r.area.width / 3;
-               cut := preprocessed.cut(x => r.area.x,
-                                       y => r.area.y,
-                                       w => r.area.width,
-                                       h => r.area.height);
-               cut := cut.expand(margin, margin, PixelArray.Background);
-               cut := cut.rescale(blockSize, blockSize);
-               label := Natural'Value((1 => Ada.Strings.Unbounded.Element(expectedChars, id)));
-               data.labels.Append(label);
-               data.values.append(toDataVector(cut, invertPixels => True));
-               id := id + 1;
-            end loop;
-         end;
+         expectedCharsVector.Append(getCharacterString(Ada.Directories.Simple_Name(dirEnt)));
+         pathsToLoad.Append(Ada.Strings.Unbounded.To_Unbounded_String(Ada.Directories.Full_Name(dirEnt)));
 
       end loop;
       Ada.Directories.End_Search(Search => searchObj);
+      loadFrom(data               => data,
+               paths              => pathsToLoad,
+               expectedCharVector => expectedCharsVector);
    end loadFrom;
 
    function toDataVector(img: in PixelArray.ImagePlane; invertPixels: Boolean := False) return MathUtils.Vector is

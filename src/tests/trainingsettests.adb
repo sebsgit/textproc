@@ -21,7 +21,8 @@ package body TrainingSetTests is
       use AUnit.Test_Cases.Registration;
    begin
       Register_Routine (T, testDataGenerator'Access, "float vec generator");
-      Register_Routine (T, testTrainInput'Access, "input validation");
+      Register_Routine (T, testTrainInputMNIST'Access, "NN train on MNIST");
+      Register_Routine (T, testTrainInputImages'Access, "NN train on local image data");
    end Register_Tests;
 
    function Name(T: TestCase) return Test_String is
@@ -113,7 +114,7 @@ package body TrainingSetTests is
                                  image    => image);
    end saveToFile;
 
-   procedure testTrainInput(T : in out Test_Cases.Test_Case'Class) is
+   procedure testTrainInputMNIST(T : in out Test_Cases.Test_Case'Class) is
       set: TrainingData.Set;
       validationSet: TrainingData.Set;
       config: NeuralNet.Config(1);
@@ -125,15 +126,7 @@ package body TrainingSetTests is
 
       failedPredictions: Natural := 0;
    begin
-      Ada.Text_IO.Put_Line("Load training set...");
-      tm := Timer.start;
-      -- set.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set/"));
-      -- tm.report;
-      -- validationSet.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set_test_cases/"));
-
       loadMNistData(set, validationSet);
-
-      tm.report;
 
       Assert(set.size > 10, "not enough train data: " & set.size'Image);
       Assert(validationSet.size > 10, "not enough test data: " & validationSet.size'Image);
@@ -148,7 +141,7 @@ package body TrainingSetTests is
 
       Ada.Text_IO.Put_Line("Train the model...");
 
-      tm.reset;
+      tm := Timer.start;
       dnn.train(data   => set.values,
                 labels => set.labels);
       tm.report;
@@ -179,5 +172,74 @@ package body TrainingSetTests is
          Assert(acc > 0.75, "total: " & validationSet.size'Image & ", failed: " & failedPredictions'Image);
       end;
 
-   end testTrainInput;
+   end testTrainInputMNIST;
+
+   procedure testTrainInputImages(T : in out Test_Cases.Test_Case'Class) is
+      set: TrainingData.Set;
+      validationSet: TrainingData.Set;
+      config: NeuralNet.Config(1);
+      dnn: NNClassifier.DNN(config.size + 1);
+      tm: Timer.T;
+
+      pred: MathUtils.Vector;
+      di: Positive := 1;
+
+      failedPredictions: Natural := 0;
+   begin
+      Ada.Text_IO.Put_Line("Load training set...");
+      tm := Timer.start;
+      set.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set/"));
+      tm.report;
+
+      validationSet.loadFrom(Ada.Strings.Unbounded.To_Unbounded_String("../training_set_test_cases/"));
+      tm.report;
+
+      Assert(set.size > 10, "not enough train data: " & set.size'Image);
+      Assert(validationSet.size > 10, "not enough test data: " & validationSet.size'Image);
+
+      config.act := NeuralNet.LOGISTIC;
+      config.inputSize := TrainingData.blockArea;
+      config.lr := 0.7;
+      config.sizes := (1 => 32);
+
+      dnn := NNClassifier.create(config          => config,
+                                 numberOfClasses => 10);
+
+      Ada.Text_IO.Put_Line("Train the model...");
+
+      tm.reset;
+      -- TODO: remove the loop when there is more train data
+      for i in 0 .. 2 loop
+         dnn.train(data   => set.values,
+                   labels => set.labels);
+      end loop;
+      tm.report;
+
+      Ada.Text_IO.Put_Line("Inference...");
+      tm.reset;
+      for lab of validationSet.labels loop
+         --  MathUtils.print(validationSet.values.data(di));
+         pred := dnn.classify(validationSet.values.data(di));
+         for idx in pred.First_Index .. pred.Last_Index loop
+            if idx /= lab + 1 then
+               if pred(idx) > pred(lab + 1) then
+                  failedPredictions := failedPredictions + 1;
+                  exit;
+               end if;
+            end if;
+         end loop;
+         di := di + 1;
+      end loop;
+      tm.report;
+
+      declare
+         acc: Float;
+      begin
+         acc := Float(validationSet.size - failedPredictions) / Float(validationSet.size);
+         Ada.Text_IO.Put_Line("Model accuracy: " & acc'Image);
+         -- require > 75% accuracy
+         Assert(acc > 0.75, "total: " & validationSet.size'Image & ", failed: " & failedPredictions'Image);
+      end;
+
+   end testTrainInputImages;
 end TrainingSetTests;

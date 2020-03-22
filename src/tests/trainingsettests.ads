@@ -9,5 +9,6 @@ package TrainingSetTests is
    function Name(T: TestCase) return Message_String;
 
    procedure testDataGenerator(T : in out Test_Cases.Test_Case'Class);
-   procedure testTrainInput(T : in out Test_Cases.Test_Case'Class);
+   procedure testTrainInputMNIST(T : in out Test_Cases.Test_Case'Class);
+   procedure testTrainInputImages(T: in out Test_Cases.Test_Case'Class);
 end TrainingSetTests;
