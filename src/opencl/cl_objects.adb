@@ -11,7 +11,7 @@ package body cl_objects is
       end return;
    end Create;
 
-   function Create_Program(ctx: in out Context; source: in String; result_status: out Status) return Program'Class is
+   function Create_Program(ctx: in out Context'Class; source: in String; result_status: out Status) return Program is
    begin
       return prog: Program do
          prog.handle := opencl.Create_Program(ctx           => ctx.handle,

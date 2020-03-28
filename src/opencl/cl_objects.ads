@@ -8,7 +8,7 @@ package cl_objects is
    type Kernel is tagged limited private;
 
    function Create(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context;
-   function Create_Program(ctx: in out Context; source: in String; result_status: out Status) return Program'Class;
+   function Create_Program(ctx: in out Context'Class; source: in String; result_status: out Status) return Program;
 
 private
    type Context is limited new Ada.Finalization.Limited_Controlled with record

@@ -176,8 +176,8 @@ package body OpenCLTests is
                begin
                   Assert(cl_status = opencl.SUCCESS, "create ctx");
                   declare
-                     prog: cl_objects.Program'Class := ctx.Create_Program(source        => "__kernel void empty_func() {}",
-                                                                          result_status => cl_status);
+                     prog: cl_objects.Program := ctx.Create_Program(source        => "__kernel void empty_func() {}",
+                                                                    result_status => cl_status);
                   begin
                      Assert(cl_status = opencl.SUCCESS, "create prog");
                   end;
