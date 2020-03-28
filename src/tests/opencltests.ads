@@ -9,4 +9,5 @@ package OpenCLTests is
    function Name(T: TestCase) return Message_String;
 
    procedure testLoad(T : in out Test_Cases.Test_Case'Class);
+   procedure testObjectAPI(T: in out Test_Cases.Test_Case'Class);
 end OpenCLTests;

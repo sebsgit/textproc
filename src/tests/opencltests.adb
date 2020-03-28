@@ -3,6 +3,7 @@ with Ada.Text_IO;
 
 with dl_loader;
 with opencl; use opencl;
+with cl_objects; use cl_objects;
 with System;
 with System.Address_Image;
 
@@ -26,6 +27,7 @@ package body OpenCLTests is
       use AUnit.Test_Cases.Registration;
    begin
       Register_Routine (T, testLoad'Access, "load runtime opencl");
+      Register_Routine (T, testObjectAPI'Access, "opencl object API");
    end Register_Tests;
 
    function Name(T: TestCase) return Test_String is
@@ -153,5 +155,36 @@ package body OpenCLTests is
          end loop;
       end;
    end testLoad;
+
+   procedure testObjectAPI(T: in out Test_Cases.Test_Case'Class) is
+      cl_status: opencl.Status;
+      platf_ids: constant opencl.Platforms := opencl.Get_Platforms(cl_status);
+   begin
+      Assert(platf_ids'Length > 0, "no opencl platforms");
+      for p of platf_ids loop
+         declare
+            dev_ids: constant opencl.Devices := opencl.Get_Devices(id            => p,
+                                                                   dev_type      => opencl.DEVICE_TYPE_ALL,
+                                                                   result_status => cl_status);
+         begin
+            Assert(dev_ids'Length > 0, "no devices");
+            for d_id of dev_ids loop
+               declare
+                  ctx: cl_objects.Context := cl_objects.Create(context_platform => p,
+                                                               context_device   => d_id,
+                                                               result_status    => cl_status);
+               begin
+                  Assert(cl_status = opencl.SUCCESS, "create ctx");
+                  declare
+                     prog: cl_objects.Program'Class := ctx.Create_Program(source        => "__kernel void empty_func() {}",
+                                                                          result_status => cl_status);
+                  begin
+                     Assert(cl_status = opencl.SUCCESS, "create prog");
+                  end;
+               end;
+            end loop;
+         end;
+      end loop;
+   end testObjectAPI;
 
 end OpenCLTests;
