@@ -332,6 +332,55 @@ package body opencl is
       return Status'Enum_Val(cl_code);
    end Release_Kernel;
 
+   function Enqueue_Kernel(queue: in Command_Queue;
+                           kernel: in Kernel_ID;
+                           global_offset: in Offsets;
+                           global_work_size,
+                           local_work_size: in Dimensions;
+                           event_wait_list: in Events;
+                           event: out Event_ID) return Status is
+      function Impl(q_id, k_id: Raw_Address;
+                    dims: Interfaces.C.unsigned;
+                    glob_off, glob_ws, local_ws: access C_SizeT_Array;
+                    num_wait_events: Interfaces.C.unsigned;
+                    event_wait: System.Address;
+                    event_res: access Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clEnqueueNDRangeKernel,
+        Convention => C;
+
+      event_result: aliased Raw_Address;
+      result: Interfaces.C.int := 0;
+      global_ws_array: aliased C_SizeT_Array := (others => 0);
+      local_ws_array: aliased C_SizeT_Array := (others => 0);
+      global_off_array: aliased C_SizeT_Array := (others => 0);
+      event_wait_array: aliased C_Address_Array := (others => 0);
+   begin
+      for i in 1 .. global_offset'Length loop
+         global_off_array(Interfaces.C.size_t(i)) := Interfaces.C.size_t(global_offset(i));
+      end loop;
+      for i in 1 .. global_work_size'Length loop
+         global_ws_array(Interfaces.C.size_t(i)) := Interfaces.C.size_t(global_work_size(i));
+      end loop;
+      for i in 1 .. local_work_size'Length loop
+         local_ws_array(Interfaces.C.size_t(i)) := Interfaces.C.size_t(local_work_size(i));
+      end loop;
+      for i in 1 .. event_wait_list'Length loop
+         event_wait_array(Interfaces.C.size_t(i)) := Raw_Address(event_wait_list(i));
+      end loop;
+      result := Impl(q_id       => Raw_Address(queue),
+                     k_id       => Raw_Address(kernel),
+                     dims       => global_work_size'Length,
+                     glob_off   => global_off_array'Access,
+                     glob_ws    => global_ws_array'Access,
+                     local_ws   => local_ws_array'Access,
+                     num_wait_events => event_wait_list'Length,
+                     event_wait => (if event_wait_list'Length = 0 then System.Null_Address else C_Addr_Arr_Conv.To_Address(event_wait_array'Unchecked_Access)),
+                     event_res  => event_result'Access);
+      event := Event_ID(event_result);
+      return Status'Enum_Val(result);
+   end Enqueue_Kernel;
+
    function Create_Command_Queue(ctx: in Context_ID; dev: in Device_ID; result_status: out Status) return Command_Queue is
       function Impl(ctx_id: Raw_Address; dev_id: Raw_Address; props: System.Address; err_c: access Interfaces.C.int) return Raw_Address
         with Import,
@@ -358,5 +407,32 @@ package body opencl is
       cl_code := Impl(Raw_Address(id));
       return Status'Enum_Val(cl_code);
    end Release_Command_Queue;
+
+   function Wait_For_Events(ev_list: Events) return Status is
+      function Impl(num_events: Interfaces.C.unsigned; event_arr: access C_Address_Array) return Interfaces.C.int
+        with Import,
+        Address => clWaitForEvents,
+        Convention => C;
+      cl_code: Interfaces.C.int := 0;
+      event_arr: aliased C_Address_Array := (others => 0);
+   begin
+      for i in 1 .. ev_list'Length loop
+         event_arr(Interfaces.C.size_t(i)) := Raw_Address(ev_list(i));
+      end loop;
+      cl_code := Impl(num_events => ev_list'Length,
+                      event_arr  => event_arr'Access);
+      return Status'Enum_Val(cl_code);
+   end Wait_For_Events;
+
+   function Finish(queue: in Command_Queue) return Status is
+      function Impl(p: Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clFinish,
+        Convention => C;
+      cl_code: Interfaces.C.int := 0;
+   begin
+      cl_code := Impl(Raw_Address(queue));
+      return Status'Enum_Val(cl_code);
+   end Finish;
 
 end opencl;

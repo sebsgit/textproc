@@ -106,6 +106,31 @@ package body OpenCLTests is
                            begin
                               Assert(cl_status = opencl.SUCCESS, "create kernel");
 
+                              declare
+                                 event: Event_ID := 0;
+                                 glob_off: constant Offsets(1 .. 2) := (others => 0);
+                                 glob_ws: constant Dimensions(1 .. 2) := (1 => 1, 2=> 1);
+                                 loc_ws: constant Dimensions(1 .. 2) := (1 => 1, 2=> 1);
+                                 wait_ev: Events(1 .. 0);
+                                 ev_to_sync: Events(1 .. 1) := (others => 0);
+                              begin
+                                 cl_status := opencl.Enqueue_Kernel(queue            => queue_id,
+                                                                    kernel           => kernel,
+                                                                    global_offset    => glob_off,
+                                                                    global_work_size => glob_ws,
+                                                                    local_work_size  => loc_ws,
+                                                                    event_wait_list  => wait_ev,
+                                                                    event            => event);
+                                 Assert(cl_status = opencl.SUCCESS, "enqueue kernel");
+
+                                 ev_to_sync(1) := event;
+                                 cl_status := opencl.Wait_For_Events(ev_to_sync);
+                                 Assert(cl_status = opencl.SUCCESS, "wait for events");
+
+                                 cl_status := opencl.Finish(queue_id);
+                                 Assert(cl_status = opencl.SUCCESS, "cl finish");
+                              end;
+
                               cl_status := opencl.Release_Kernel(kernel);
                               Assert(cl_status = opencl.SUCCESS, "release kernel");
                            end;

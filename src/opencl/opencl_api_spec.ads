@@ -20,8 +20,13 @@ package opencl_api_spec is
 
    clCreateKernel: System.Address;
    clReleaseKernel: System.Address;
+   clEnqueueNDRangeKernel: System.Address;
 
    clCreateCommandQueueWithProperties: System.Address;
    clReleaseCommandQueue: System.Address;
+
+   clWaitForEvents: System.Address;
+
+   clFinish: System.Address;
 
 end opencl_api_spec;

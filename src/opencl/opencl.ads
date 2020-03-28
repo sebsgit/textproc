@@ -6,8 +6,10 @@ package opencl is
                             Post => Check,
                             Type_Invariant => Check);
 
-   type Status is (INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
-   for Status use (INVALID_PLATFORM => cl_h.CL_INVALID_PLATFORM,
+   type Status is (INVALID_GLOBAL_WORK_SIZE, INVALID_EVENT_WAIT_LIST, INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
+   for Status use (INVALID_GLOBAL_WORK_SIZE => cl_h.CL_INVALID_GLOBAL_WORK_SIZE,
+                   INVALID_EVENT_WAIT_LIST => cl_h.CL_INVALID_EVENT_WAIT_LIST,
+                   INVALID_PLATFORM => cl_h.CL_INVALID_PLATFORM,
                    INVALID_VALUE => cl_h.CL_INVALID_VALUE,
                    BUILD_PROGRAM_FAILURE => cl_h.CL_BUILD_PROGRAM_FAILURE,
                    OUT_OF_HOST_MEMORY => cl_h.CL_OUT_OF_HOST_MEMORY,
@@ -24,10 +26,16 @@ package opencl is
    type Device_ID is new Raw_Address;
    type Devices is array (Natural range <>) of Device_ID;
 
+   type Dimensions is array (Positive range<>) of Natural;
+   type Offsets is array (Positive range<>) of Natural;
+
    type Context_ID is new Raw_Address;
 
    type Program_ID is new Raw_Address;
    type Kernel_ID is new Raw_Address;
+
+   type Event_ID is new Raw_Address;
+   type Events is array (Positive range<>) of Event_ID;
 
    type Command_Queue is new Raw_Address;
 
@@ -86,6 +94,14 @@ package opencl is
 
    function Create_Kernel(program: in Program_ID; name: in String; result_status: out Status) return Kernel_ID
      with Pre => program /= 0 and name'Length > 0;
+   function Enqueue_Kernel(queue: in Command_Queue;
+                           kernel: in Kernel_ID;
+                           global_offset: in Offsets;
+                           global_work_size,
+                           local_work_size: in Dimensions;
+                           event_wait_list: in Events;
+                           event: out Event_ID) return Status
+     with Pre => queue /= 0 and kernel /= 0 and (global_work_size'Length = local_work_size'Length);
    function Release_Kernel(id: in Kernel_ID) return Status
      with Pre => id /= 0;
 
@@ -93,5 +109,11 @@ package opencl is
      with Pre => ctx /= 0 and dev /= 0;
    function Release_Command_Queue(id: in Command_Queue) return Status
      with Pre => id /= 0;
+
+   function Wait_For_Events(ev_list: Events) return Status
+     with Pre => ev_list'Length > 0;
+
+   function Finish(queue: in Command_Queue) return Status
+     with Pre => queue /= 0;
 
 end opencl;
