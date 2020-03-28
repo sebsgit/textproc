@@ -129,6 +129,9 @@ package body OpenCLTests is
 
                                  cl_status := opencl.Finish(queue_id);
                                  Assert(cl_status = opencl.SUCCESS, "cl finish");
+
+                                 cl_status := opencl.Release_Event(event);
+                                 Assert(cl_status = opencl.SUCCESS, "release event");
                               end;
 
                               cl_status := opencl.Release_Kernel(kernel);

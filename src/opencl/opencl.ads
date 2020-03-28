@@ -112,6 +112,8 @@ package opencl is
 
    function Wait_For_Events(ev_list: Events) return Status
      with Pre => ev_list'Length > 0;
+   function Release_Event(ev: Event_ID) return Status
+     with Pre => ev /= 0;
 
    function Finish(queue: in Command_Queue) return Status
      with Pre => queue /= 0;

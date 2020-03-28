@@ -26,6 +26,7 @@ package opencl_api_spec is
    clReleaseCommandQueue: System.Address;
 
    clWaitForEvents: System.Address;
+   clReleaseEvent: System.Address;
 
    clFinish: System.Address;
 

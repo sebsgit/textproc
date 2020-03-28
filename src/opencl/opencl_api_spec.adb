@@ -23,6 +23,7 @@ package body opencl_api_spec is
       clReleaseCommandQueue := dl_loader.Get_Symbol(h, "clReleaseCommandQueue");
 
       clWaitForEvents := dl_loader.Get_Symbol(h, "clWaitForEvents");
+      clReleaseEvent := dl_loader.Get_Symbol(h, "clReleaseEvent");
 
       clFinish := dl_loader.Get_Symbol(h, "clFinish");
 

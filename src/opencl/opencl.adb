@@ -424,6 +424,17 @@ package body opencl is
       return Status'Enum_Val(cl_code);
    end Wait_For_Events;
 
+   function Release_Event(ev: in Event_ID) return Status is
+      function Impl(p: Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clReleaseEvent,
+        Convention => C;
+      cl_code: Interfaces.C.int := 0;
+   begin
+      cl_code := Impl(Raw_Address(ev));
+      return Status'Enum_Val(cl_code);
+   end Release_Event;
+
    function Finish(queue: in Command_Queue) return Status is
       function Impl(p: Raw_Address) return Interfaces.C.int
         with Import,
