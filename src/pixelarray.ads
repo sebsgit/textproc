@@ -57,15 +57,11 @@ package PixelArray is
 private
    type Pixel_Buffer is array (Natural range <>) of aliased Interfaces.C.unsigned_char;
    type Pixel_Buffer_Access is access Pixel_Buffer;
-   package UCharPtrs is new Interfaces.C.Pointers(Index              => Natural,
-                                                  Element            => Interfaces.C.unsigned_char,
-                                                  Element_Array => Pixel_Buffer,
-                                                  Default_Terminator => 0);
 
    type ImagePlane is limited new Ada.Finalization.Limited_Controlled with record
 
 
-      data: Pixel_Buffer_Access;
+      data: aliased Pixel_Buffer_Access;
       width_d, height_d: Natural := 0;
    end record;
    overriding procedure Finalize(This: in out ImagePlane)
