@@ -59,11 +59,10 @@ private
    type Pixel_Buffer_Access is access Pixel_Buffer;
 
    type ImagePlane is limited new Ada.Finalization.Limited_Controlled with record
-
-
       data: aliased Pixel_Buffer_Access;
       width_d, height_d: Natural := 0;
    end record;
+
    overriding procedure Finalize(This: in out ImagePlane)
      with Inline;
 
