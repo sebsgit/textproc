@@ -332,6 +332,22 @@ package body opencl is
       return Status'Enum_Val(cl_code);
    end Release_Kernel;
 
+   function Set_Kernel_Arg(id: in Kernel_ID; index: Natural; size: Positive; address: System.Address) return Status is
+      function Impl(k_id: Raw_Address; arg_index: Interfaces.C.unsigned; arg_size: Interfaces.C.size_t; arg_addr: System.Address) return Interfaces.C.int
+        with Import,
+        Address => clSetKernelArg,
+        Convention => C;
+      cl_code: Interfaces.C.int;
+      arg_index: constant Interfaces.C.unsigned := Interfaces.C.unsigned(index);
+      arg_size: constant Interfaces.C.size_t := Interfaces.C.size_t(size);
+   begin
+      cl_code := Impl(k_id      => Raw_Address(id),
+                      arg_index => arg_index,
+                      arg_size  => arg_size,
+                      arg_addr  => address);
+      return Status'Enum_Val(cl_code);
+   end Set_Kernel_Arg;
+
    function Enqueue_Kernel(queue: in Command_Queue;
                            kernel: in Kernel_ID;
                            global_offset: in Offsets;

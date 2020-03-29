@@ -1,4 +1,5 @@
 with Ada.Finalization;
+with System;
 
 with opencl; use opencl;
 
@@ -21,8 +22,12 @@ package cl_objects is
      with Pre => dev /= 0;
    function Build(prog: in out Program'Class; device: in Device_ID; options: in String) return Status
      with Pre => device /= 0;
+   function Get_Build_Log(prog: in out Program'Class; device: in Device_ID) return String;
+
    function Create_Kernel(prog: in out Program'Class; name: in String; result_status: out Status) return Kernel
      with Pre => name'Length > 0;
+   function Set_Arg(kern: in out Kernel; index: Natural; size: Positive; address: System.Address) return Status;
+
    function Finish(queue: in out Command_Queue) return Status;
 
 private

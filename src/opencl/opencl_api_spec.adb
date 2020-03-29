@@ -18,6 +18,7 @@ package body opencl_api_spec is
       clCreateKernel := dl_loader.Get_Symbol(h, "clCreateKernel");
       clReleaseKernel := dl_loader.Get_Symbol(h, "clReleaseKernel");
       clEnqueueNDRangeKernel := dl_loader.Get_Symbol(h, "clEnqueueNDRangeKernel");
+      clSetKernelArg := dl_loader.Get_Symbol(h, "clSetKernelArg");
 
       clCreateCommandQueueWithProperties := dl_loader.Get_Symbol(h, "clCreateCommandQueueWithProperties");
       clReleaseCommandQueue := dl_loader.Get_Symbol(h, "clReleaseCommandQueue");

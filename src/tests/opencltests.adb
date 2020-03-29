@@ -1,5 +1,7 @@
 with AUnit.Assertions; use AUnit.Assertions;
 with Ada.Text_IO;
+with Interfaces.C; use Interfaces.C;
+with System.Address_To_Access_Conversions;
 
 with dl_loader;
 with opencl; use opencl;
@@ -178,11 +180,16 @@ package body OpenCLTests is
                   declare
                      prog: cl_objects.Program := ctx.Create_Program(source        => "__kernel void empty_func() {}",
                                                                     result_status => cl_status);
+                     prog2: cl_objects.Program := ctx.Create_Program(source        => "__kernel void copy_int(int src, __global int *dest) {*dest = src;}",
+                                                                     result_status => cl_status);
                   begin
                      Assert(cl_status = opencl.SUCCESS, "create prog");
 
                      cl_status := prog.Build(d_id, "-w -Werror");
                      Assert(cl_status = opencl.SUCCESS, "build prog");
+
+                     cl_status := prog2.Build(d_id, "-w -Werror");
+                     Assert(cl_status = opencl.SUCCESS, "build prog 2: " & cl_status'Image & " / " & prog2.Get_Build_Log(d_id));
                      declare
                         q_status: opencl.Status;
                         kern: cl_objects.Kernel := prog.Create_Kernel(name          => "empty_func",
@@ -192,6 +199,26 @@ package body OpenCLTests is
                      begin
                         Assert(cl_status = opencl.SUCCESS, "create kernel");
                         Assert(q_status = opencl.SUCCESS, "create command queue");
+
+                        declare
+                           kern2: cl_objects.Kernel := prog2.Create_Kernel(name          => "copy_int",
+                                                                           result_status => cl_status);
+
+                           package Addr_Conv is new System.Address_To_Access_Conversions(Object => Interfaces.C.int);
+
+                           source_value: aliased Interfaces.C.int := 15;
+                           dest_value: Interfaces.C.int := 0;
+
+                        begin
+                           Assert(cl_status = opencl.SUCCESS, "create kernel 2");
+
+                           cl_status := kern2.Set_Arg(0, Interfaces.C.int'Size / 8, Addr_Conv.To_Address(source_value'Access));
+                           Assert(cl_status = opencl.SUCCESS, "set arg 0: " & cl_status'Image);
+
+                           --TODO mem objects
+
+                           Assert(source_value = dest_value, "Failed kernel run");
+                        end;
 
                         cl_status := queue.Finish;
                         Assert(cl_status = opencl.SUCCESS, "finish queue");

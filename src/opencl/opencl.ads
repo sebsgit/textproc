@@ -6,9 +6,12 @@ package opencl is
                             Post => Check,
                             Type_Invariant => Check);
 
-   type Status is (INVALID_GLOBAL_WORK_SIZE, INVALID_EVENT_WAIT_LIST, INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
+   type Status is (INVALID_GLOBAL_WORK_SIZE, INVALID_EVENT_WAIT_LIST, INVALID_ARG_SIZE, INVALID_PROGRAM_EXECUTABLE, INVALID_MEM_OBJECT, INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
    for Status use (INVALID_GLOBAL_WORK_SIZE => cl_h.CL_INVALID_GLOBAL_WORK_SIZE,
                    INVALID_EVENT_WAIT_LIST => cl_h.CL_INVALID_EVENT_WAIT_LIST,
+                   INVALID_ARG_SIZE => cl_h.CL_INVALID_ARG_SIZE,
+                   INVALID_PROGRAM_EXECUTABLE => cl_h.CL_INVALID_PROGRAM_EXECUTABLE,
+                   INVALID_MEM_OBJECT => cl_h.CL_INVALID_MEM_OBJECT,
                    INVALID_PLATFORM => cl_h.CL_INVALID_PLATFORM,
                    INVALID_VALUE => cl_h.CL_INVALID_VALUE,
                    BUILD_PROGRAM_FAILURE => cl_h.CL_BUILD_PROGRAM_FAILURE,
@@ -103,6 +106,8 @@ package opencl is
                            event: out Event_ID) return Status
      with Pre => queue /= 0 and kernel /= 0 and (global_work_size'Length = local_work_size'Length);
    function Release_Kernel(id: in Kernel_ID) return Status
+     with Pre => id /= 0;
+   function Set_Kernel_Arg(id: in Kernel_ID; index: Natural; size: Positive; address: System.Address) return Status
      with Pre => id /= 0;
 
    function Create_Command_Queue(ctx: in Context_ID; dev: in Device_ID; result_status: out Status) return Command_Queue

@@ -36,6 +36,14 @@ package body cl_objects is
                                   options => options);
    end Build;
 
+   function Get_Build_Log(prog: in out Program'Class; device: in Device_ID) return String is
+      cl_stat: opencl.Status;
+   begin
+      return opencl.Get_Program_Build_Log(id            => prog.handle,
+                                          device        => device,
+                                          result_status => cl_stat);
+   end Get_Build_Log;
+
    function Create_Kernel(prog: in out Program'Class; name: in String; result_status: out Status) return Kernel is
    begin
       return kern: Kernel do
@@ -44,6 +52,14 @@ package body cl_objects is
                                              result_status => result_status);
       end return;
    end Create_Kernel;
+
+   function Set_Arg(kern: in out Kernel; index: Natural; size: Positive; address: System.Address) return Status is
+   begin
+      return opencl.Set_Kernel_Arg(id      => kern.handle,
+                                   index   => index,
+                                   size    => size,
+                                   address => address);
+   end Set_Arg;
 
    function Finish(queue: in out Command_Queue) return Status is
    begin
