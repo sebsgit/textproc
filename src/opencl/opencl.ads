@@ -6,17 +6,33 @@ package opencl is
                             Post => Check,
                             Type_Invariant => Check);
 
-   type Status is (INVALID_GLOBAL_WORK_SIZE, INVALID_EVENT_WAIT_LIST, INVALID_ARG_SIZE, INVALID_PROGRAM_EXECUTABLE, INVALID_MEM_OBJECT, INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
+   type Status is (INVALID_GLOBAL_WORK_SIZE, INVALID_OPERATION, INVALID_EVENT_WAIT_LIST, INVALID_ARG_SIZE, INVALID_PROGRAM_EXECUTABLE, INVALID_MEM_OBJECT, INVALID_CONTEXT, INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
    for Status use (INVALID_GLOBAL_WORK_SIZE => cl_h.CL_INVALID_GLOBAL_WORK_SIZE,
+                   INVALID_OPERATION => cl_h.CL_INVALID_OPERATION,
                    INVALID_EVENT_WAIT_LIST => cl_h.CL_INVALID_EVENT_WAIT_LIST,
                    INVALID_ARG_SIZE => cl_h.CL_INVALID_ARG_SIZE,
                    INVALID_PROGRAM_EXECUTABLE => cl_h.CL_INVALID_PROGRAM_EXECUTABLE,
                    INVALID_MEM_OBJECT => cl_h.CL_INVALID_MEM_OBJECT,
+                   INVALID_CONTEXT => cl_h.CL_INVALID_CONTEXT,
                    INVALID_PLATFORM => cl_h.CL_INVALID_PLATFORM,
                    INVALID_VALUE => cl_h.CL_INVALID_VALUE,
                    BUILD_PROGRAM_FAILURE => cl_h.CL_BUILD_PROGRAM_FAILURE,
                    OUT_OF_HOST_MEMORY => cl_h.CL_OUT_OF_HOST_MEMORY,
                    SUCCESS => cl_h.CL_SUCCESS);
+
+   type Mem_Flag is (READ_WRITE, WRITE_ONLY, READ_ONLY, USE_HOST_PTR, ALLOC_HOST_PTR, COPY_HOST_PTR, HOST_WRITE_ONLY, HOST_READ_ONLY, HOST_NO_ACCESS, KERNEL_READ_WRITE);
+   for Mem_Flag use (READ_WRITE => cl_h.CL_MEM_READ_WRITE,
+                     WRITE_ONLY => cl_h.CL_MEM_WRITE_ONLY,
+                     READ_ONLY => cl_h.CL_MEM_READ_ONLY,
+                     USE_HOST_PTR => cl_h.CL_MEM_USE_HOST_PTR,
+                     ALLOC_HOST_PTR => cl_h.CL_MEM_ALLOC_HOST_PTR,
+                     COPY_HOST_PTR => cl_h.CL_MEM_COPY_HOST_PTR,
+                     HOST_WRITE_ONLY => cl_h.CL_MEM_HOST_WRITE_ONLY,
+                     HOST_READ_ONLY => cl_h.CL_MEM_HOST_READ_ONLY,
+                     HOST_NO_ACCESS => cl_h.CL_MEM_HOST_NO_ACCESS,
+                     KERNEL_READ_WRITE => cl_h.CL_MEM_KERNEL_READ_AND_WRITE);
+
+   type Mem_Flags is array (Mem_Flag) of Boolean;
 
    type Raw_Address is mod System.Memory_Size;
 
@@ -39,6 +55,8 @@ package opencl is
 
    type Event_ID is new Raw_Address;
    type Events is array (Positive range<>) of Event_ID;
+
+   type Mem_ID is new Raw_Address;
 
    type Command_Queue is new Raw_Address;
 
@@ -122,5 +140,14 @@ package opencl is
 
    function Finish(queue: in Command_Queue) return Status
      with Pre => queue /= 0;
+
+   function Create_Buffer(ctx: in Context_ID; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Mem_ID
+     with Pre => ctx /= 0;
+   function Enqueue_Read(queue: in Command_Queue; mem_ob: in Mem_ID; block_read: Boolean; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; event: out Event_ID) return Status
+     with Pre => queue /= 0 and mem_ob /= 0;
+   function Enqueue_Write(queue: in Command_Queue; mem_ob: in Mem_ID; block_write: Boolean; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; event: out Event_ID) return Status
+     with Pre => queue /= 0 and mem_ob /= 0;
+   function Release(mem_ob: in Mem_ID) return Status
+     with Pre => mem_ob /= 0;
 
 end opencl;

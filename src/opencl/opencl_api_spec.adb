@@ -1,4 +1,4 @@
-with System;
+with System; use System;
 
 package body opencl_api_spec is
    function Load_From(h: dl_loader.Handle) return Boolean is
@@ -20,6 +20,12 @@ package body opencl_api_spec is
       clEnqueueNDRangeKernel := dl_loader.Get_Symbol(h, "clEnqueueNDRangeKernel");
       clSetKernelArg := dl_loader.Get_Symbol(h, "clSetKernelArg");
 
+      clReleaseMemObject := dl_loader.Get_Symbol(h, "clReleaseMemObject");
+
+      clCreateBuffer := dl_loader.Get_Symbol(h, "clCreateBuffer");
+      clEnqueueReadBuffer := dl_loader.Get_Symbol(h, "clEnqueueReadBuffer");
+      clEnqueueWriteBuffer := dl_loader.Get_Symbol(h, "clEnqueueWriteBuffer");
+
       clCreateCommandQueueWithProperties := dl_loader.Get_Symbol(h, "clCreateCommandQueueWithProperties");
       clReleaseCommandQueue := dl_loader.Get_Symbol(h, "clReleaseCommandQueue");
 
@@ -28,6 +34,6 @@ package body opencl_api_spec is
 
       clFinish := dl_loader.Get_Symbol(h, "clFinish");
 
-      return True;
+      return clCreateBuffer /= System.Null_Address; --TODO
    end;
 end opencl_api_spec;

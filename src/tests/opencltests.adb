@@ -115,8 +115,8 @@ package body OpenCLTests is
                                  glob_off: constant Offsets(1 .. 2) := (others => 0);
                                  glob_ws: constant Dimensions(1 .. 2) := (1 => 1, 2=> 1);
                                  loc_ws: constant Dimensions(1 .. 2) := (1 => 1, 2=> 1);
-                                 wait_ev: Events(1 .. 0);
-                                 ev_to_sync: Events(1 .. 1) := (others => 0);
+                                 wait_ev: opencl.Events(1 .. 0);
+                                 ev_to_sync: opencl.Events(1 .. 1) := (others => 0);
                               begin
                                  cl_status := opencl.Enqueue_Kernel(queue            => queue_id,
                                                                     kernel           => kernel,
@@ -180,7 +180,7 @@ package body OpenCLTests is
                   declare
                      prog: cl_objects.Program := ctx.Create_Program(source        => "__kernel void empty_func() {}",
                                                                     result_status => cl_status);
-                     prog2: cl_objects.Program := ctx.Create_Program(source        => "__kernel void copy_int(int src, __global int *dest) {*dest = src;}",
+                     prog2: cl_objects.Program := ctx.Create_Program(source        => "__kernel void copy_int(int src, __global int *dest) {*dest += src;}",
                                                                      result_status => cl_status);
                   begin
                      Assert(cl_status = opencl.SUCCESS, "create prog");
@@ -207,13 +207,50 @@ package body OpenCLTests is
                            package Addr_Conv is new System.Address_To_Access_Conversions(Object => Interfaces.C.int);
 
                            source_value: aliased Interfaces.C.int := 15;
-                           dest_value: Interfaces.C.int := 0;
+                           dest_value: aliased Interfaces.C.int := 7;
+
+                           buff_status: opencl.Status;
+                           buff: cl_objects.Buffer := ctx.Create_Buffer(flags         => (ALLOC_HOST_PTR => True, others => False),
+                                                                        size          => dest_value'Size / 8,
+                                                                        host_ptr      => System.Null_Address,
+                                                                        result_status => buff_status);
 
                         begin
                            Assert(cl_status = opencl.SUCCESS, "create kernel 2");
+                           Assert(buff_status = opencl.SUCCESS, "create buffer");
 
                            cl_status := kern2.Set_Arg(0, Interfaces.C.int'Size / 8, Addr_Conv.To_Address(source_value'Access));
                            Assert(cl_status = opencl.SUCCESS, "set arg 0: " & cl_status'Image);
+
+                           declare
+                              ev_to_wait: cl_objects.Events(1 .. 0);
+                              write_ev: cl_objects.Event := queue.Enqueue_Write(mem_ob             => buff,
+                                                                                offset             => 0,
+                                                                                size               => dest_value'Size / 8,
+                                                                                ptr                => Addr_Conv.To_Address(dest_value'Access),
+                                                                                events_to_wait_for => ev_to_wait,
+                                                                                code               => cl_status);
+                           begin
+                              Assert(cl_status = opencl.SUCCESS, "Enqueue write: " & cl_status'Image);
+                              cl_status := write_ev.Wait;
+                              Assert(cl_status = opencl.SUCCESS, "Wait for write: " & cl_status'Image);
+                              dest_value := 0;
+
+                              declare
+                                 read_ev: cl_objects.Event := queue.Enqueue_Read(mem_ob             => buff,
+                                                                                 offset             => 0,
+                                                                                 size               => dest_value'Size / 8,
+                                                                                 ptr                => Addr_Conv.To_Address(dest_value'Access),
+                                                                                 events_to_wait_for => ev_to_wait,
+                                                                                 code               => cl_status);
+                              begin
+                                 Assert(cl_status = opencl.SUCCESS, "Enqueue read: " & cl_status'Image);
+                                 cl_status := read_ev.Wait;
+                                 Assert(cl_status = opencl.SUCCESS, "Wait for read: " & cl_status'Image);
+                                 Assert(dest_value = 7, "Failed to read from cl buffer: " & dest_value'Image);
+                              end;
+
+                           end;
 
                            --TODO mem objects
 

@@ -32,7 +32,7 @@ package body MainTestSuite is
 
    function Suite return Access_Test_Suite is
    begin
-      Add_Test(suiteObject'Access, openclTestCase'Access);
+      Add_Test(suiteObject'Access, openclTestCase'Access); return suiteObject'Access;
       Add_Test(suiteObject'Access, csvTestCase'Access);
       Add_Test(suiteObject'Access, imageTestCase'Access);
       Add_Test(suiteObject'Access, shapeTestCase'Access);

@@ -12,7 +12,9 @@ package cl_objects is
    type Program is tagged limited private;
    type Kernel is tagged limited private;
    type Event is tagged limited private;
+   type Events is array (Positive range<>) of Event;
    type Command_Queue is tagged limited private;
+   type Buffer is tagged limited private;
 
    function Create(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context
      with Pre => context_platform /= 0 and context_device /= 0;
@@ -20,6 +22,11 @@ package cl_objects is
      with Pre => source'Length > 0;
    function Create_Command_Queue(ctx: in out Context'Class; dev: in Device_ID; result_status: out Status) return Command_Queue
      with Pre => dev /= 0;
+
+   function Create_Buffer(ctx: in out Context'Class; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Buffer;
+   function Enqueue_Write(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
+   function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
+
    function Build(prog: in out Program'Class; device: in Device_ID; options: in String) return Status
      with Pre => device /= 0;
    function Get_Build_Log(prog: in out Program'Class; device: in Device_ID) return String;
@@ -28,6 +35,7 @@ package cl_objects is
      with Pre => name'Length > 0;
    function Set_Arg(kern: in out Kernel; index: Natural; size: Positive; address: System.Address) return Status;
 
+   function Wait(ev: in out Event) return Status;
    function Finish(queue: in out Command_Queue) return Status;
 
 private
@@ -56,4 +64,9 @@ private
       handle: opencl.Command_Queue;
    end record;
    overriding procedure Finalize(This: in out Command_Queue);
+
+   type Buffer is limited new Ada.Finalization.Limited_Controlled with record
+      handle: opencl.Mem_ID;
+   end record;
+   overriding procedure Finalize(This: in out Buffer);
 end cl_objects;

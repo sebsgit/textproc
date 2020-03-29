@@ -12,6 +12,12 @@ package body opencl is
 
    use opencl_api_spec;
 
+   type cl_int is new Interfaces.C.int;
+   type cl_uint is new Interfaces.C.unsigned;
+   type cl_bool is new cl_uint;
+   type cl_ulong is mod 2 ** 64;
+   type cl_mem_flags is new cl_ulong;
+
    type C_Address_Array is array (Interfaces.C.size_t range 1 .. 64) of aliased Raw_Address;
    type C_Char_Buffer is array (Interfaces.C.size_t range 1 .. 1024) of aliased Interfaces.C.char;
    type C_SizeT_Array is array (Interfaces.C.size_t range 1 .. 64) of aliased Interfaces.C.size_t;
@@ -36,6 +42,15 @@ package body opencl is
       end loop;
       return result;
    end To_Ada;
+
+   function Convert(event_list: in Events) return C_Address_Array is
+      result: C_Address_Array := (others => 0);
+   begin
+      for i in 1 .. event_list'Length loop
+         result(Interfaces.C.size_t(i)) := Raw_Address(event_list(i));
+      end loop;
+      return result;
+   end Convert;
 
    function Init(path: String) return Status is
       result: Boolean;
@@ -370,7 +385,7 @@ package body opencl is
       global_ws_array: aliased C_SizeT_Array := (others => 0);
       local_ws_array: aliased C_SizeT_Array := (others => 0);
       global_off_array: aliased C_SizeT_Array := (others => 0);
-      event_wait_array: aliased C_Address_Array := (others => 0);
+      event_wait_array: aliased C_Address_Array := Convert(event_wait_list);
    begin
       for i in 1 .. global_offset'Length loop
          global_off_array(Interfaces.C.size_t(i)) := Interfaces.C.size_t(global_offset(i));
@@ -380,9 +395,6 @@ package body opencl is
       end loop;
       for i in 1 .. local_work_size'Length loop
          local_ws_array(Interfaces.C.size_t(i)) := Interfaces.C.size_t(local_work_size(i));
-      end loop;
-      for i in 1 .. event_wait_list'Length loop
-         event_wait_array(Interfaces.C.size_t(i)) := Raw_Address(event_wait_list(i));
       end loop;
       result := Impl(q_id       => Raw_Address(queue),
                      k_id       => Raw_Address(kernel),
@@ -461,5 +473,106 @@ package body opencl is
       cl_code := Impl(Raw_Address(queue));
       return Status'Enum_Val(cl_code);
    end Finish;
+
+   function Convert(flags: in Mem_Flags) return cl_mem_flags is
+      result: cl_mem_flags := 0;
+      current_flag: cl_mem_flags := 0;
+   begin
+      for i in flags'Range loop
+         if flags(i) then
+            current_flag := cl_mem_flags(Mem_Flag'Enum_Rep(i));
+            result := result or current_flag;
+         end if;
+      end loop;
+      return result;
+   end Convert;
+
+   function Create_Buffer(ctx: in Context_ID; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Mem_ID is
+      function Impl(ctx: Raw_Address; flags: cl_mem_flags; size: Interfaces.C.size_t; host_ptr: System.Address; result_code: access cl_int) return Raw_Address
+        with Import,
+        Address => clCreateBuffer,
+        Convention => C;
+      cl_code: aliased cl_int;
+      size_p: constant Interfaces.C.size_t := Interfaces.C.size_t(size);
+      raw_mem_id: Raw_Address;
+   begin
+      raw_mem_id := Impl(ctx         => Raw_Address(ctx),
+                         flags       => Convert(flags),
+                         size        => size_p,
+                         host_ptr    => host_ptr,
+                         result_code => cl_code'Access);
+      result_status := Status'Enum_Val(cl_code);
+      return Mem_ID(raw_mem_id);
+   end Create_Buffer;
+
+   function Enqueue_Read(queue: in Command_Queue; mem_ob: in Mem_ID; block_read: Boolean; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; event: out Event_ID) return Status is
+      function Impl(q: Raw_Address;
+                    mem: Raw_Address;
+                    block_read: cl_bool;
+                    offset, size: Interfaces.C.size_t;
+                    ptr: System.Address;
+                    num_wait_events: Interfaces.C.unsigned;
+                    event_wait: System.Address;
+                    event_res: access Raw_Address) return cl_int
+        with Import,
+        Address => clEnqueueReadBuffer,
+        Convention => C;
+      event_list: aliased C_Address_Array := Convert(events_to_wait_for);
+      event_result: aliased Raw_Address;
+      cl_code: cl_int;
+   begin
+      cl_code := Impl(q             => Raw_Address(queue),
+                      mem             => Raw_Address(mem_ob),
+                      block_read      => cl_bool(if block_read then 1 else 0),
+                      offset          => Interfaces.C.size_t(offset),
+                      size            => Interfaces.C.size_t(size),
+                      ptr             => ptr,
+                      num_wait_events => events_to_wait_for'Length,
+                      event_wait      => (if events_to_wait_for'Length = 0 then System.Null_Address else C_Addr_Arr_Conv.To_Address(event_list'Unchecked_Access)),
+                      event_res       => event_result'Access);
+      event := Event_ID(event_result);
+      return Status'Enum_Val(cl_code);
+   end Enqueue_Read;
+
+   function Enqueue_Write(queue: in Command_Queue; mem_ob: in Mem_ID; block_write: Boolean; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; event: out Event_ID) return Status is
+      function Impl(q: Raw_Address;
+                    mem: Raw_Address;
+                    block_write: cl_bool;
+                    offset, size: Interfaces.C.size_t;
+                    ptr: System.Address;
+                    num_wait_events: Interfaces.C.unsigned;
+                    event_wait: System.Address;
+                    event_res: access Raw_Address) return cl_int
+        with Import,
+        Address => clEnqueueWriteBuffer,
+        Convention => C;
+      event_list: aliased C_Address_Array := Convert(events_to_wait_for);
+      event_result: aliased Raw_Address;
+      cl_code: cl_int;
+   begin
+      cl_code := Impl(q             => Raw_Address(queue),
+                      mem             => Raw_Address(mem_ob),
+                      block_write      => cl_bool(if block_write then 1 else 0),
+                      offset          => Interfaces.C.size_t(offset),
+                      size            => Interfaces.C.size_t(size),
+                      ptr             => ptr,
+                      num_wait_events => events_to_wait_for'Length,
+                      event_wait      => (if events_to_wait_for'Length = 0 then System.Null_Address else C_Addr_Arr_Conv.To_Address(event_list'Unchecked_Access)),
+                      event_res       => event_result'Access);
+      Ada.Text_IO.Put_Line("enq write: " & cl_code'Image);
+      event := Event_ID(event_result);
+      return Status'Enum_Val(cl_code);
+   end Enqueue_Write;
+
+   function Release(mem_ob: in Mem_ID) return Status is
+      function Impl(id: Raw_Address) return Interfaces.C.int
+        with Import,
+        Address => clReleaseMemObject,
+        Convention => C;
+      cl_code: Interfaces.C.int;
+   begin
+      cl_code := Impl(Raw_Address(mem_ob));
+      return Status'Enum_Val(cl_code);
+   end Release;
 
 end opencl;

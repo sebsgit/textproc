@@ -29,6 +29,57 @@ package body cl_objects is
       end return;
    end Create_Command_Queue;
 
+   function Create_Buffer(ctx: in out Context'Class; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Buffer is
+   begin
+      return buff: Buffer do
+         buff.handle := opencl.Create_Buffer(ctx           => ctx.handle,
+                                             flags         => flags,
+                                             size          => size,
+                                             host_ptr      => host_ptr,
+                                             result_status => result_status);
+      end return;
+   end Create_Buffer;
+
+   function Enqueue_Write(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event is
+      ev_handle: Event_ID;
+      event_ids: opencl.Events(events_to_wait_for'Range);
+   begin
+      for i in 1 .. event_ids'Length loop
+         event_ids(i) := events_to_wait_for(i).handle;
+      end loop;
+      return ev: Event do
+         code := opencl.Enqueue_Write(queue                => queue.handle,
+                                      mem_ob             => mem_ob.handle,
+                                      block_write        => False,
+                                      offset             => offset,
+                                      size               => size,
+                                      ptr                => ptr,
+                                      events_to_wait_for => event_ids,
+                                      event              => ev_handle);
+         ev.handle := ev_handle;
+      end return;
+   end Enqueue_Write;
+
+   function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event is
+      ev_handle: Event_ID;
+      event_ids: opencl.Events(events_to_wait_for'Range);
+   begin
+      for i in 1 .. event_ids'Length loop
+         event_ids(i) := events_to_wait_for(i).handle;
+      end loop;
+      return ev: Event do
+         code := opencl.Enqueue_Read(queue                => queue.handle,
+                                     mem_ob             => mem_ob.handle,
+                                     block_read        => False,
+                                     offset             => offset,
+                                     size               => size,
+                                     ptr                => ptr,
+                                     events_to_wait_for => event_ids,
+                                     event              => ev_handle);
+         ev.handle := ev_handle;
+      end return;
+   end Enqueue_Read;
+
    function Build(prog: in out Program'Class; device: in Device_ID; options: in String) return Status is
    begin
       return opencl.Build_Program(id      => prog.handle,
@@ -60,6 +111,12 @@ package body cl_objects is
                                    size    => size,
                                    address => address);
    end Set_Arg;
+
+   function Wait(ev: in out Event) return Status is
+      event_ids: constant opencl.Events(1 .. 1) := (1 => ev.handle);
+   begin
+      return opencl.Wait_For_Events(event_ids);
+   end Wait;
 
    function Finish(queue: in out Command_Queue) return Status is
    begin
@@ -114,6 +171,13 @@ package body cl_objects is
    procedure Finalize(This: in out Command_Queue) is
       package Cleanup is new Finalization_Impl(Handle_Type      => opencl.Command_Queue,
                                                Release_Callback => opencl.Release_Command_Queue);
+   begin
+      Cleanup.Release(This.handle);
+   end Finalize;
+
+   procedure Finalize(This: in out Buffer) is
+      package Cleanup is new Finalization_Impl(Handle_Type      => opencl.Mem_ID,
+                                               Release_Callback => opencl.Release);
    begin
       Cleanup.Release(This.handle);
    end Finalize;

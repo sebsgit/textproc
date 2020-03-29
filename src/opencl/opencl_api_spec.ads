@@ -23,6 +23,12 @@ package opencl_api_spec is
    clSetKernelArg: System.Address;
    clEnqueueNDRangeKernel: System.Address;
 
+   clReleaseMemObject: System.Address;
+
+   clCreateBuffer: System.Address;
+   clEnqueueReadBuffer: System.Address;
+   clEnqueueWriteBuffer: System.Address;
+
    clCreateCommandQueueWithProperties: System.Address;
    clReleaseCommandQueue: System.Address;
 
