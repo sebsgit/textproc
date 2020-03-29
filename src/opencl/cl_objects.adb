@@ -20,6 +20,31 @@ package body cl_objects is
       end return;
    end Create_Program;
 
+   function Create_Command_Queue(ctx: in out Context'Class; dev: in Device_ID; result_status: out Status) return Command_Queue is
+   begin
+      return q: Command_Queue do
+         q.handle := opencl.Create_Command_Queue(ctx           => ctx.handle,
+                                                 dev           => dev,
+                                                 result_status => result_status);
+      end return;
+   end Create_Command_Queue;
+
+   function Build(prog: in out Program'Class; device: in Device_ID; options: in String) return Status is
+   begin
+      return opencl.Build_Program(id      => prog.handle,
+                                  device  => device,
+                                  options => options);
+   end Build;
+
+   function Create_Kernel(prog: in out Program'Class; name: in String; result_status: out Status) return Kernel is
+   begin
+      return kern: Kernel do
+         kern.handle := opencl.Create_Kernel(program       => prog.handle,
+                                             name          => name,
+                                             result_status => result_status);
+      end return;
+   end Create_Kernel;
+
    generic
       type Handle_Type is new Raw_Address;
       with function Release_Callback (handle: in Handle_Type) return opencl.Status;
@@ -54,6 +79,20 @@ package body cl_objects is
    procedure Finalize(This: in out Kernel) is
       package Cleanup is new Finalization_Impl(Handle_Type      => opencl.Kernel_ID,
                                                Release_Callback => opencl.Release_Kernel);
+   begin
+      Cleanup.Release(This.handle);
+   end Finalize;
+
+   procedure Finalize(This: in out Event) is
+      package Cleanup is new Finalization_Impl(Handle_Type      => opencl.Event_ID,
+                                               Release_Callback => opencl.Release_Event);
+   begin
+      Cleanup.Release(This.handle);
+   end Finalize;
+
+   procedure Finalize(This: in out Command_Queue) is
+      package Cleanup is new Finalization_Impl(Handle_Type      => opencl.Command_Queue,
+                                               Release_Callback => opencl.Release_Command_Queue);
    begin
       Cleanup.Release(This.handle);
    end Finalize;

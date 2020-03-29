@@ -180,6 +180,19 @@ package body OpenCLTests is
                                                                     result_status => cl_status);
                   begin
                      Assert(cl_status = opencl.SUCCESS, "create prog");
+
+                     cl_status := prog.Build(d_id, "-w -Werror");
+                     Assert(cl_status = opencl.SUCCESS, "build prog");
+                     declare
+                        q_status: opencl.Status;
+                        kern: cl_objects.Kernel := prog.Create_Kernel(name          => "empty_func",
+                                                                      result_status => cl_status);
+                        queue: cl_objects.Command_Queue := ctx.Create_Command_Queue(dev           => d_id,
+                                                                                    result_status => q_status);
+                     begin
+                        Assert(cl_status = opencl.SUCCESS, "create kernel");
+                        Assert(q_status = opencl.SUCCESS, "create command queue");
+                     end;
                   end;
                end;
             end loop;
