@@ -4,6 +4,7 @@ with System;
 with opencl; use opencl;
 
 package cl_objects is
+   pragma Elaborate_Body;
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);

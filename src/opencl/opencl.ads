@@ -2,6 +2,7 @@ with System; use System;
 with cl_h;
 
 package opencl is
+   pragma Elaborate_Body;
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);

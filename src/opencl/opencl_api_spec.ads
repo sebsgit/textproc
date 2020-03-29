@@ -4,6 +4,7 @@ with Interfaces.C;
 with dl_loader;
 
 package opencl_api_spec is
+   pragma Elaborate_Body;
    function Load_From(h: dl_loader.Handle) return Boolean;
 
    clGetPlatformIDs: System.Address;
