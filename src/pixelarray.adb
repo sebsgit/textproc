@@ -1,25 +1,33 @@
 with Ada.Text_IO;
+with Ada.Unchecked_Deallocation;
 
 package body PixelArray is
+   procedure Free_Pixel_Buffer is new Ada.Unchecked_Deallocation(Object => Pixel_Buffer,
+                                                                 Name   => Pixel_Buffer_Access);
+
    function allocate(width, height: Natural) return ImagePlane is
    begin
       return result: ImagePlane do
          result.width_d := width;
          result.height_d := height;
-         result.data.Set_Length(Length => Ada.Containers.Count_Type(width * height));
+         result.data := new Pixel_Buffer(0 .. width * height);
       end return;
    end allocate;
 
    procedure assign(This: in out ImagePlane; other: in ImagePlane) is
    begin
-      This.data := other.data;
+      Free_Pixel_Buffer(This.data);
+      This.data := new Pixel_Buffer(0 .. other.width_d * other.height_d);
+      This.data.all := other.data.all;
       This.width_d := other.width_d;
       This.height_d := other.height_d;
    end assign;
 
    procedure Finalize(This: in out ImagePlane) is
    begin
-      null;
+      if This.data /= null then
+         Free_Pixel_Buffer(This.data);
+      end if;
    end Finalize;
 
    function width(img: ImagePlane) return Natural is
@@ -32,22 +40,23 @@ package body PixelArray is
       return img.height_d;
    end height;
 
-   procedure set(img: out ImagePlane; x, y: Natural; px: Pixel) is
+   procedure set(img: in out ImagePlane; x, y: Natural; px: Pixel) is
    begin
-      img.data.Replace_Element(x + y * img.width, px);
+      img.data.all(x + y * img.width) := Interfaces.C.unsigned_char(px);
    end set;
 
    procedure set(img: in out ImagePlane; px: Pixel)
    is
    begin
-      for i in 0 .. img.data.Length - 1 loop
-         img.data.Replace_Element(Integer(i), px);
+      for i in 0 .. img.width * img.height loop
+         img.data.all(i) := Interfaces.C.unsigned_char(px);
       end loop;
    end set;
 
    function get(img: ImagePlane; x, y: Natural) return Pixel is
    begin
-      return img.data.Element(x + y * img.width);
+      --Ada.Text_IO.Put_Line("get: " & x'Image & " " & y'Image & " " & img.width'Image & " " & img.height'Image);
+      return Pixel(img.data.all(x + y * img.width));
    end get;
 
    function isInside(image: in ImagePlane; x, y: in Integer) return Boolean is

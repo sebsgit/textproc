@@ -1,5 +1,7 @@
 with Ada.Containers.Vectors; use Ada.Containers;
 with Ada.Finalization;
+with Interfaces.C;
+with Interfaces.C.Pointers;
 
 package PixelArray is
    pragma Assertion_Policy (Pre => Check,
@@ -24,7 +26,7 @@ package PixelArray is
    procedure assign(This: in out ImagePlane; other: in ImagePlane)
      with Inline;
 
-   procedure set(img: out ImagePlane; x, y: Natural; px: Pixel)
+   procedure set(img: in out ImagePlane; x, y: Natural; px: Pixel)
      with Pre => (x < img.width and y < img.height),
      Inline;
 
@@ -53,10 +55,17 @@ package PixelArray is
      Inline;
 
 private
-   package PixelVector is new Ada.Containers.Vectors (Index_Type => Natural, Element_Type => Pixel);
+   type Pixel_Buffer is array (Natural range <>) of aliased Interfaces.C.unsigned_char;
+   type Pixel_Buffer_Access is access Pixel_Buffer;
+   package UCharPtrs is new Interfaces.C.Pointers(Index              => Natural,
+                                                  Element            => Interfaces.C.unsigned_char,
+                                                  Element_Array => Pixel_Buffer,
+                                                  Default_Terminator => 0);
 
    type ImagePlane is limited new Ada.Finalization.Limited_Controlled with record
-      data: PixelVector.Vector;
+
+
+      data: Pixel_Buffer_Access;
       width_d, height_d: Natural := 0;
    end record;
    overriding procedure Finalize(This: in out ImagePlane)
