@@ -23,6 +23,7 @@ package cl_objects is
      with Pre => device /= 0;
    function Create_Kernel(prog: in out Program'Class; name: in String; result_status: out Status) return Kernel
      with Pre => name'Length > 0;
+   function Finish(queue: in out Command_Queue) return Status;
 
 private
    type Context is limited new Ada.Finalization.Limited_Controlled with record

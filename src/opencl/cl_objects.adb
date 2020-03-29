@@ -45,6 +45,11 @@ package body cl_objects is
       end return;
    end Create_Kernel;
 
+   function Finish(queue: in out Command_Queue) return Status is
+   begin
+      return opencl.Finish(queue.handle);
+   end Finish;
+
    generic
       type Handle_Type is new Raw_Address;
       with function Release_Callback (handle: in Handle_Type) return opencl.Status;

@@ -192,6 +192,9 @@ package body OpenCLTests is
                      begin
                         Assert(cl_status = opencl.SUCCESS, "create kernel");
                         Assert(q_status = opencl.SUCCESS, "create command queue");
+
+                        cl_status := queue.Finish;
+                        Assert(cl_status = opencl.SUCCESS, "finish queue");
                      end;
                   end;
                end;
