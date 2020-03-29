@@ -90,14 +90,13 @@ package body HistogramTests is
    end testMultiplication;
 
    procedure testProjections(T: in out Test_Cases.Test_Case'Class) is
-      image: PixelArray.ImagePlane;
+      image: PixelArray.ImagePlane := PixelArray.allocate(width  => 5, height => 5);
       r: ImageRegions.Rect;
    begin
       r.x := 0;
       r.y := 0;
       r.width := 5;
       r.height := 5;
-      image := PixelArray.allocate(width  => r.width, height => r.height);
       image.set(Pixel(255));
       image.set(2, 0, 0);
       image.set(2, 1, 0);

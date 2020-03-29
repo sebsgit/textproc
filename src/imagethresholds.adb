@@ -22,11 +22,10 @@ package body ImageThresholds is
    end simple;
 
    function simple(image: PixelArray.ImagePlane; threshold: PixelArray.Pixel) return PixelArray.ImagePlane is
-      result: PixelArray.ImagePlane;
    begin
-      result := PixelArray.allocate(width => image.width, height => image.height);
-      simple(result, threshold);
-      return result;
+      return result: ImagePlane := PixelArray.allocate(width => image.width, height => image.height) do
+         simple(result, threshold);
+      end return;
    end simple;
 
    function bernsenAdaptative(image: PixelArray.ImagePlane; radius: Positive; c_min: PixelArray.Pixel) return PixelArray.ImagePlane is
@@ -54,24 +53,23 @@ package body ImageThresholds is
          return result;
       end circleMinMax;
 
-      result: PixelArray.ImagePlane;
       minMax: MinMaxIntensity;
       threshold: PixelArray.Pixel;
    begin
-      result := PixelArray.allocate(image.width, image.height);
-      for py in 0 .. image.height - 1 loop
-         for px in 0 .. image.width - 1 loop
+      return result: PixelArray.ImagePlane := PixelArray.allocate(image.width, image.height) do
+         for py in 0 .. image.height - 1 loop
+            for px in 0 .. image.width - 1 loop
 
-            minMax := circleMinMax(image  => image,
-                                   x      => px,
-                                   y      => py,
-                                   radius => radius);
-            threshold := (if minMax.max - minMax.min >= c_min then (minMax.min + minMax.max) / 2 else 0);
-            result.set(px, py, (if image.get(px, py) > threshold then 255 else 0));
+               minMax := circleMinMax(image  => image,
+                                      x      => px,
+                                      y      => py,
+                                      radius => radius);
+               threshold := (if minMax.max - minMax.min >= c_min then (minMax.min + minMax.max) / 2 else 0);
+               result.set(px, py, (if image.get(px, py) > threshold then 255 else 0));
 
+            end loop;
          end loop;
-      end loop;
-      return result;
+      end return;
    end bernsenAdaptative;
 
 end ImageThresholds;

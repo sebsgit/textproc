@@ -14,9 +14,7 @@ package body ImageIO is
       imageData: StbiWrapper.ImageData;
    begin
       imageData := StbiWrapper.load(filename);
-      declare
-         result: PixelArray.ImagePlane := PixelArray.allocate(Integer(imageData.width), Integer(imageData.height));
-      begin
+      return result: PixelArray.ImagePlane := PixelArray.allocate(Integer(imageData.width), Integer(imageData.height)) do
          if imageData.nChannels = 1 then
             for y in 0 .. imageData.height - 1 loop
                for x in 0 .. imageData.width - 1 loop
@@ -41,8 +39,7 @@ package body ImageIO is
                end loop;
             end loop;
          end if;
-         return result;
-      end;
+      end return;
    end load;
 
    function save(filename: C.Strings.chars_ptr; image: PixelArray.ImagePlane) return Boolean

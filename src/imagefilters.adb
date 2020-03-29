@@ -19,23 +19,23 @@ package body ImageFilters is
             k(index) := (1.0 / (2.0 * Ada.Numerics.Pi * sigma2)) * (FloatFunc.Exp(- (Float(x * x + y * y)) / (2.0 * sigma2)));
          end loop;
       end loop;
-      result := PixelArray.allocate(image.width, image.height);
-      for py in 0 .. image.height - 1 loop
-         for px in 0 .. image.width - 1 loop
-            tmpSum := 0.0;
-            for y in -size .. size loop
-               for x in -size .. size loop
-                  index := (x + size) + (y + size) * (2 * size + 1);
-                  if image.isInside(px + x, py + y) then
-                     tmpSum := tmpSum + k(index) * Float(image.get(px + x, py + y));
-                  else
-                     tmpSum := tmpSum + k(index) * Float(image.get(px, py));
-                  end if;
+      return result: PixelArray.ImagePlane := PixelArray.allocate(image.width, image.height) do
+         for py in 0 .. image.height - 1 loop
+            for px in 0 .. image.width - 1 loop
+               tmpSum := 0.0;
+               for y in -size .. size loop
+                  for x in -size .. size loop
+                     index := (x + size) + (y + size) * (2 * size + 1);
+                     if image.isInside(px + x, py + y) then
+                        tmpSum := tmpSum + k(index) * Float(image.get(px + x, py + y));
+                     else
+                        tmpSum := tmpSum + k(index) * Float(image.get(px, py));
+                     end if;
+                  end loop;
                end loop;
+               result.set(px, py, PixelArray.Pixel(if tmpSum > 255.0 then 255.0 else tmpSum));
             end loop;
-            result.set(px, py, PixelArray.Pixel(if tmpSum > 255.0 then 255.0 else tmpSum));
          end loop;
-      end loop;
-      return result;
+      end return;
    end gaussian;
 end ImageFilters;

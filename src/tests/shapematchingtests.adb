@@ -27,10 +27,9 @@ package body ShapeMatchingTests is
    end Name;
 
    function testShape(db: ShapeDatabase.DB; path: String) return ShapeDatabase.MatchScore is
-      image: PixelArray.ImagePlane;
+      image: PixelArray.ImagePlane := ShapeDatabase.preprocess(ImageIO.load(path));
       regions: ImageRegions.RegionVector.Vector;
    begin
-      image := ShapeDatabase.preprocess(ImageIO.load(path));
       -- detect regions
       regions := ImageRegions.detectRegions(image);
 
@@ -48,7 +47,7 @@ package body ShapeMatchingTests is
 
    procedure testComplexImage(T: in out Test_Cases.Test_Case'Class) is
       db: ShapeDatabase.DB;
-      testImage: PixelArray.ImagePlane;
+      testImage: PixelArray.ImagePlane := ImageIO.load("test_complex.jpg");
       regions: ImageRegions.RegionVector.Vector;
       score: ShapeDatabase.MatchScore;
 
@@ -59,8 +58,7 @@ package body ShapeMatchingTests is
       end matchAt;
    begin
       db := ShapeDatabase.getDB;
-      testImage := ImageIO.load("test_complex.jpg");
-      testImage := ShapeDatabase.preprocess(testImage);
+      testImage.assign(ShapeDatabase.preprocess(testImage));
       regions := ImageRegions.detectRegions(testImage);
       ImageRegions.sortRegions(regions);
       Assert(regions.Length = 11, "count of detected regions");

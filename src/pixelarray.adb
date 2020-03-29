@@ -2,13 +2,25 @@ with Ada.Text_IO;
 
 package body PixelArray is
    function allocate(width, height: Natural) return ImagePlane is
-      result: ImagePlane;
    begin
-      result.width_d := width;
-      result.height_d := height;
-      result.data.Set_Length(Length => Ada.Containers.Count_Type(width * height));
-      return result;
+      return result: ImagePlane do
+         result.width_d := width;
+         result.height_d := height;
+         result.data.Set_Length(Length => Ada.Containers.Count_Type(width * height));
+      end return;
    end allocate;
+
+   procedure assign(This: in out ImagePlane; other: in ImagePlane) is
+   begin
+      This.data := other.data;
+      This.width_d := other.width_d;
+      This.height_d := other.height_d;
+   end assign;
+
+   procedure Finalize(This: in out ImagePlane) is
+   begin
+      null;
+   end Finalize;
 
    function width(img: ImagePlane) return Natural is
    begin
@@ -56,8 +68,6 @@ package body PixelArray is
    end allPixels;
 
    function rescale(img: in ImagePlane; w, h: in Positive) return ImagePlane is
-      result: ImagePlane;
-
       function sample(x, y: in Natural) return Pixel is
          nx: Natural;
          ny: Natural;
@@ -68,51 +78,48 @@ package body PixelArray is
       end sample;
 
    begin
-      result := allocate(width  => w,
-                         height => h);
-      for y in 0 .. h - 1 loop
-         for x in 0 .. w - 1 loop
-            result.set(x  => x,
-                       y  => y,
-                       px => sample(x, y));
+      return result: ImagePlane := allocate(width  => w,
+                                            height => h) do
+         for y in 0 .. h - 1 loop
+            for x in 0 .. w - 1 loop
+               result.set(x  => x,
+                          y  => y,
+                          px => sample(x, y));
+            end loop;
          end loop;
-      end loop;
-      return result;
+      end return;
    end;
 
    function expand(img: in ImagePlane; w_margin, h_margin: in Positive; color: Pixel) return ImagePlane is
-      result: ImagePlane;
    begin
-      result := allocate(img.width + 2 * w_margin, img.height + 2 * h_margin);
-      result.set(color);
-      for y in h_margin .. img.height + h_margin - 1 loop
-         for x in w_margin .. img.width + w_margin - 1 loop
-            result.set(x, y, img.get(x - w_margin, y - h_margin));
+      return result: ImagePlane := allocate(img.width + 2 * w_margin, img.height + 2 * h_margin) do
+         result.set(color);
+         for y in h_margin .. img.height + h_margin - 1 loop
+            for x in w_margin .. img.width + w_margin - 1 loop
+               result.set(x, y, img.get(x - w_margin, y - h_margin));
+            end loop;
          end loop;
-      end loop;
-      return result;
+      end return;
    end expand;
 
 
    function cut(img: in ImagePlane; x, y: in Natural; w, h: in Positive) return ImagePlane is
-      result: ImagePlane;
       xr: Natural := 0;
       yr: Natural := 0;
    begin
-      result := allocate(width  => w,
-                         height => h);
-      for yi in y .. y + h - 1 loop
-         xr := 0;
-         for xi in x .. x + w - 1 loop
-            result.set(x  => xr,
-                       y  => yr,
-                       px => img.get(xi, yi));
-            xr := xr + 1;
+      return result: ImagePlane := allocate(width  => w,
+                                            height => h) do
+         for yi in y .. y + h - 1 loop
+            xr := 0;
+            for xi in x .. x + w - 1 loop
+               result.set(x  => xr,
+                          y  => yr,
+                          px => img.get(xi, yi));
+               xr := xr + 1;
+            end loop;
+            yr := yr + 1;
          end loop;
-         yr := yr + 1;
-      end loop;
-      return result;
+      end return;
    end cut;
-
 
 end PixelArray;

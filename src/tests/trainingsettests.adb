@@ -35,7 +35,7 @@ package body TrainingSetTests is
       output: MathUtils.Vector;
       expectedValues: MathUtils.Vector;
    begin
-      image := PixelArray.allocate(16, 16);
+      image.assign(PixelArray.allocate(16, 16));
       for x in 0 .. 15 loop
          for y in 0 .. 15 loop
             image.set(x, y, PixelArray.Pixel((x + 1) * (y + 1) - 1));
@@ -94,11 +94,10 @@ package body TrainingSetTests is
    procedure saveToFile(data: MathUtils.Vector; path: String)
      with Pre => Positive(data.Length) = TrainingData.blockArea
    is
-      image: PixelArray.ImagePlane;
+      image: PixelArray.ImagePlane := PixelArray.allocate(width  => TrainingData.blockSize,
+                                                          height => TrainingData.blockSize);
       saveResult: Boolean;
    begin
-      image := PixelArray.allocate(width  => TrainingData.blockSize,
-                                   height => TrainingData.blockSize);
       for y in 0 .. image.height - 1 loop
          for x in 0 .. image.width - 1 loop
             declare

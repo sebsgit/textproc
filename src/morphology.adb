@@ -36,26 +36,24 @@ package body Morphology is
    end minPixel;
 
    function dilate(image: PixelArray.ImagePlane; size: Positive) return PixelArray.ImagePlane is
-      result: PixelArray.ImagePlane;
    begin
-      result := PixelArray.allocate(image.width, image.height);
-      for py in 0 .. image.height - 1 loop
-         for px in 0 .. image.width - 1 loop
-            result.set(px, py, maxPixel(image, px, py, size));
+      return result: PixelArray.ImagePlane := PixelArray.allocate(image.width, image.height) do
+         for py in 0 .. image.height - 1 loop
+            for px in 0 .. image.width - 1 loop
+               result.set(px, py, maxPixel(image, px, py, size));
+            end loop;
          end loop;
-      end loop;
-      return result;
+      end return;
    end dilate;
 
    function erode(image: PixelArray.ImagePlane; size: Positive) return PixelArray.ImagePlane is
-      result: PixelArray.ImagePlane;
    begin
-      result := PixelArray.allocate(image.width, image.height);
-      for py in 0 .. image.height - 1 loop
-         for px in 0 .. image.width - 1 loop
-            result.set(px, py, minPixel(image, px, py, size));
+      return result: PixelArray.ImagePlane := PixelArray.allocate(image.width, image.height) do
+         for py in 0 .. image.height - 1 loop
+            for px in 0 .. image.width - 1 loop
+               result.set(px, py, minPixel(image, px, py, size));
+            end loop;
          end loop;
-      end loop;
-      return result;
+      end return;
    end erode;
 end Morphology;

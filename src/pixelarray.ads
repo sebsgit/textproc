@@ -1,4 +1,5 @@
 with Ada.Containers.Vectors; use Ada.Containers;
+with Ada.Finalization;
 
 package PixelArray is
    pragma Assertion_Policy (Pre => Check,
@@ -9,7 +10,7 @@ package PixelArray is
 
    Background: constant Pixel := 255;
 
-   type ImagePlane is tagged private;
+   type ImagePlane is tagged limited private;
 
    function width(img: ImagePlane) return Natural
      with Inline;
@@ -20,6 +21,9 @@ package PixelArray is
    function allocate(width, height: Natural) return ImagePlane
      with Post => (width = allocate'Result.width);
 
+   procedure assign(This: in out ImagePlane; other: in ImagePlane)
+     with Inline;
+
    procedure set(img: out ImagePlane; x, y: Natural; px: Pixel)
      with Pre => (x < img.width and y < img.height),
      Inline;
@@ -29,8 +33,7 @@ package PixelArray is
      Inline;
 
    procedure set(img: in out ImagePlane; px: Pixel)
-     with Post => img'Old.width = img.width and img'Old.height = img.height,
-     Inline;
+     with Inline;
 
    function isInside(image: in ImagePlane; x, y: in Integer) return Boolean
      with Inline;
@@ -52,9 +55,11 @@ package PixelArray is
 private
    package PixelVector is new Ada.Containers.Vectors (Index_Type => Natural, Element_Type => Pixel);
 
-   type ImagePlane is tagged record
+   type ImagePlane is limited new Ada.Finalization.Limited_Controlled with record
       data: PixelVector.Vector;
       width_d, height_d: Natural := 0;
    end record;
+   overriding procedure Finalize(This: in out ImagePlane)
+     with Inline;
 
 end PixelArray;

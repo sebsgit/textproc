@@ -18,17 +18,16 @@ use Ada.Containers;
 package body ShapeDatabase is
 
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane is
-      result: PixelArray.ImagePlane;
    begin
-      result := ImageFilters.gaussian(image, 7, 2.4);
-      -- threshold adaptative
-      result := ImageThresholds.bernsenAdaptative(result,
-                                                  radius => 10,
-                                                  c_min  => 35);
-      -- apply morphology to strenghten shapes
-      result := Morphology.erode(result, 7);
-      result := Morphology.dilate(result, 7);
-      return result;
+      return result: PixelArray.ImagePlane := ImageFilters.gaussian(image, 7, 2.4) do
+         -- threshold adaptative
+         result.assign(ImageThresholds.bernsenAdaptative(result,
+                       radius => 10,
+                       c_min  => 35));
+         -- apply morphology to strenghten shapes
+         result.assign(Morphology.erode(result, 7));
+         result.assign(Morphology.dilate(result, 7));
+      end return;
    end preprocess;
 
    function processRegion(image: PixelArray.ImagePlane; rect: ImageRegions.Region) return Descriptor is
@@ -43,12 +42,10 @@ package body ShapeDatabase is
 
    function loadShape(cc: Character; path: String) return CharacterDescriptor is
       result: CharacterDescriptor;
-      image: PixelArray.ImagePlane;
+      image: PixelArray.ImagePlane := preprocess(ImageIO.load(path));
       regions: ImageRegions.RegionVector.Vector;
    begin
       result.c := cc;
-
-      image := preprocess(ImageIO.load(path));
       -- detect regions
       regions := ImageRegions.detectRegions(image);
 
@@ -114,11 +111,10 @@ package body ShapeDatabase is
 
    function loadShapes(imagePath: String) return ShapeVector.Vector is
       result: ShapeVector.Vector;
-      image: PixelArray.ImagePlane;
+      image: PixelArray.ImagePlane := preprocess(ImageIO.load(imagePath));
       r: ImageRegions.RegionVector.Vector;
       basePath: constant Ada.Strings.Unbounded.Unbounded_String := getCharacterString(imagePath);
    begin
-      image := preprocess(ImageIO.load(imagePath));
       r := ImageRegions.detectRegions(image);
       if Integer(r.Length) /= Ada.Strings.Unbounded.Length(basePath) then
          raise Capacity_Error with imagePath & " --> " & Ada.Strings.Unbounded.To_String(basePath) & ": processing error";

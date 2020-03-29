@@ -29,10 +29,9 @@ package body HistogramDescriptorTests is
    end Name;
 
    function loadImage(path: String) return Data is
-      image: PixelArray.ImagePlane;
+      image: PixelArray.ImagePlane := ShapeDatabase.preprocess(ImageIO.load("2.jpg"));
       regions: ImageRegions.RegionVector.Vector;
    begin
-      image := ShapeDatabase.preprocess(ImageIO.load("2.jpg"));
       regions := ImageRegions.detectRegions(image);
       Assert(regions.Length = 1, "1 region");
 

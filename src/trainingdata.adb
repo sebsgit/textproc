@@ -54,13 +54,11 @@ package body TrainingData is
    end filterRegions;
 
    procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String; expectedChars: in Ada.Strings.Unbounded.Unbounded_String) is
-      image: PixelArray.ImagePlane;
-      preprocessed: PixelArray.ImagePlane;
+      image: constant PixelArray.ImagePlane := ImageIO.load(Ada.Strings.Unbounded.To_String(path));
+      preprocessed: PixelArray.ImagePlane := ShapeDatabase.preprocess(image);
       regions: ImageRegions.RegionVector.Vector;
       saveStatus: Boolean;
    begin
-      image := ImageIO.load(Ada.Strings.Unbounded.To_String(path));
-      preprocessed := ShapeDatabase.preprocess(image);
       regions := ImageRegions.detectRegions(preprocessed);
       filterRegions(regions);
       ImageRegions.sortRegions(regions);
@@ -80,12 +78,12 @@ package body TrainingData is
       begin
          for r of regions loop
             margin := r.area.width / 3;
-            cut := preprocessed.cut(x => r.area.x,
-                                    y => r.area.y,
-                                    w => r.area.width,
-                                    h => r.area.height);
-            cut := cut.expand(margin, margin, PixelArray.Background);
-            cut := cut.rescale(blockSize, blockSize);
+            cut.assign(preprocessed.cut(x => r.area.x,
+                                        y => r.area.y,
+                                        w => r.area.width,
+                                        h => r.area.height));
+            cut.assign(cut.expand(margin, margin, PixelArray.Background));
+            cut.assign(cut.rescale(blockSize, blockSize));
             label := Natural'Value((1 => Ada.Strings.Unbounded.Element(expectedChars, id)));
             data.labels.Append(label);
             data.values.append(toDataVector(cut, invertPixels => True));
