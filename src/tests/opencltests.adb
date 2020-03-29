@@ -225,7 +225,7 @@ package body OpenCLTests is
                            Assert(cl_status = opencl.SUCCESS, "set arg 1: " & cl_status'Image);
 
                            declare
-                              ev_to_wait: cl_objects.Events(1 .. 0);
+                              ev_to_wait: Events(1 .. 0);
                               write_ev: cl_objects.Event := queue.Enqueue_Write(mem_ob             => buff,
                                                                                 offset             => 0,
                                                                                 size               => dest_value'Size / 8,
@@ -255,7 +255,7 @@ package body OpenCLTests is
                            end;
 
                            declare
-                              ev_to_wait: cl_objects.Events(1 .. 0);
+                              ev_to_wait: Events(1 .. 0);
                               kern_ev: cl_objects.Event := queue.Enqueue_Kernel(kern               => kern2,
                                                                                 glob_ws            => (1 => 1, 2=> 1),
                                                                                 loc_ws             => (1 => 1, 2 => 1),

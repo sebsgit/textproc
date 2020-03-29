@@ -12,7 +12,6 @@ package cl_objects is
    type Program is tagged limited private;
    type Kernel is tagged limited private;
    type Event is tagged limited private;
-   type Events is array (Positive range<>) of Event;
    type Command_Queue is tagged limited private;
    type Buffer is tagged limited private;
 

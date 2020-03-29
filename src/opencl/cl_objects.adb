@@ -43,11 +43,7 @@ package body cl_objects is
 
    function Enqueue_Write(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event is
       ev_handle: Event_ID;
-      event_ids: opencl.Events(events_to_wait_for'Range);
    begin
-      for i in 1 .. event_ids'Length loop
-         event_ids(i) := events_to_wait_for(i).handle;
-      end loop;
       return ev: Event do
          code := opencl.Enqueue_Write(queue                => queue.handle,
                                       mem_ob             => mem_ob.handle,
@@ -55,7 +51,7 @@ package body cl_objects is
                                       offset             => offset,
                                       size               => size,
                                       ptr                => ptr,
-                                      events_to_wait_for => event_ids,
+                                      events_to_wait_for => events_to_wait_for,
                                       event              => ev_handle);
          ev.handle := ev_handle;
       end return;
@@ -63,11 +59,7 @@ package body cl_objects is
 
    function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event is
       ev_handle: Event_ID;
-      event_ids: opencl.Events(events_to_wait_for'Range);
    begin
-      for i in 1 .. event_ids'Length loop
-         event_ids(i) := events_to_wait_for(i).handle;
-      end loop;
       return ev: Event do
          code := opencl.Enqueue_Read(queue                => queue.handle,
                                      mem_ob             => mem_ob.handle,
@@ -75,7 +67,7 @@ package body cl_objects is
                                      offset             => offset,
                                      size               => size,
                                      ptr                => ptr,
-                                     events_to_wait_for => event_ids,
+                                     events_to_wait_for => events_to_wait_for,
                                      event              => ev_handle);
          ev.handle := ev_handle;
       end return;
@@ -83,19 +75,15 @@ package body cl_objects is
 
    function Enqueue_Kernel(queue: in out Command_Queue'Class; kern: in out Kernel'Class; glob_ws: Dimensions; loc_ws: Dimensions; events_to_wait_for: in Events; code: out Status) return Event is
       ev_handle: Event_ID;
-      event_ids: opencl.Events(events_to_wait_for'Range);
       glob_offs: constant Offsets(glob_ws'Range) := (others => 0);
    begin
-      for i in 1 .. event_ids'Length loop
-         event_ids(i) := events_to_wait_for(i).handle;
-      end loop;
       return ev: Event do
          code := opencl.Enqueue_Kernel(queue            => queue.handle,
                                        kernel           => kern.handle,
                                        global_offset    => glob_offs,
                                        global_work_size => glob_ws,
                                        local_work_size  => loc_ws,
-                                       event_wait_list  => event_ids,
+                                       event_wait_list  => events_to_wait_for,
                                        event            => ev_handle);
          ev.handle := ev_handle;
       end return;
