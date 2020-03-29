@@ -214,13 +214,15 @@ package body OpenCLTests is
                                                                         size          => dest_value'Size / 8,
                                                                         host_ptr      => System.Null_Address,
                                                                         result_status => buff_status);
-
                         begin
                            Assert(cl_status = opencl.SUCCESS, "create kernel 2");
                            Assert(buff_status = opencl.SUCCESS, "create buffer");
 
                            cl_status := kern2.Set_Arg(0, Interfaces.C.int'Size / 8, Addr_Conv.To_Address(source_value'Access));
                            Assert(cl_status = opencl.SUCCESS, "set arg 0: " & cl_status'Image);
+
+                           cl_status := kern2.Set_Arg(1, opencl.Raw_Address'Size / 8, buff.Address);
+                           Assert(cl_status = opencl.SUCCESS, "set arg 1: " & cl_status'Image);
 
                            declare
                               ev_to_wait: cl_objects.Events(1 .. 0);
@@ -252,13 +254,31 @@ package body OpenCLTests is
 
                            end;
 
-                           --TODO mem objects
-
-                           Assert(source_value = dest_value, "Failed kernel run");
+                           declare
+                              ev_to_wait: cl_objects.Events(1 .. 0);
+                              kern_ev: cl_objects.Event := queue.Enqueue_Kernel(kern               => kern2,
+                                                                                glob_ws            => (1 => 1, 2=> 1),
+                                                                                loc_ws             => (1 => 1, 2 => 1),
+                                                                                events_to_wait_for => ev_to_wait,
+                                                                                code               => cl_status);
+                           begin
+                              Assert(cl_status = opencl.SUCCESS, "kernel run: " & cl_status'Image);
+                              cl_status := kern_ev.Wait;
+                              declare
+                                 read_ev: cl_objects.Event := queue.Enqueue_Read(mem_ob             => buff,
+                                                                                 offset             => 0,
+                                                                                 size               => dest_value'Size / 8,
+                                                                                 ptr                => Addr_Conv.To_Address(dest_value'Access),
+                                                                                 events_to_wait_for => ev_to_wait,
+                                                                                 code               => cl_status);
+                              begin
+                                 Assert(cl_status = opencl.SUCCESS, "read buff: " & cl_status'Image);
+                              end;
+                           end;
+                           cl_status := queue.Finish;
+                           Assert(cl_status = opencl.SUCCESS, "finish queue");
+                           Assert(dest_value = 22, "Failed kernel run");
                         end;
-
-                        cl_status := queue.Finish;
-                        Assert(cl_status = opencl.SUCCESS, "finish queue");
                      end;
                   end;
                end;

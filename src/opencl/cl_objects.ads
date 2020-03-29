@@ -26,6 +26,7 @@ package cl_objects is
    function Create_Buffer(ctx: in out Context'Class; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Buffer;
    function Enqueue_Write(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
    function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
+   function Enqueue_Kernel(queue: in out Command_Queue'Class; kern: in out Kernel'Class; glob_ws: Dimensions; loc_ws: Dimensions; events_to_wait_for: in Events; code: out Status) return Event;
 
    function Build(prog: in out Program'Class; device: in Device_ID; options: in String) return Status
      with Pre => device /= 0;
@@ -34,6 +35,8 @@ package cl_objects is
    function Create_Kernel(prog: in out Program'Class; name: in String; result_status: out Status) return Kernel
      with Pre => name'Length > 0;
    function Set_Arg(kern: in out Kernel; index: Natural; size: Positive; address: System.Address) return Status;
+
+   function Address(buff: in out Buffer'Class) return System.Address;
 
    function Wait(ev: in out Event) return Status;
    function Finish(queue: in out Command_Queue) return Status;
@@ -66,7 +69,7 @@ private
    overriding procedure Finalize(This: in out Command_Queue);
 
    type Buffer is limited new Ada.Finalization.Limited_Controlled with record
-      handle: opencl.Mem_ID;
+      handle: aliased opencl.Mem_ID;
    end record;
    overriding procedure Finalize(This: in out Buffer);
 end cl_objects;

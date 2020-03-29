@@ -559,7 +559,6 @@ package body opencl is
                       num_wait_events => events_to_wait_for'Length,
                       event_wait      => (if events_to_wait_for'Length = 0 then System.Null_Address else C_Addr_Arr_Conv.To_Address(event_list'Unchecked_Access)),
                       event_res       => event_result'Access);
-      Ada.Text_IO.Put_Line("enq write: " & cl_code'Image);
       event := Event_ID(event_result);
       return Status'Enum_Val(cl_code);
    end Enqueue_Write;

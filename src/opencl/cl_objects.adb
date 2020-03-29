@@ -1,4 +1,5 @@
 with Ada.Text_IO;
+with System.Address_To_Access_Conversions;
 
 package body cl_objects is
    function Create(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context is
@@ -80,6 +81,26 @@ package body cl_objects is
       end return;
    end Enqueue_Read;
 
+   function Enqueue_Kernel(queue: in out Command_Queue'Class; kern: in out Kernel'Class; glob_ws: Dimensions; loc_ws: Dimensions; events_to_wait_for: in Events; code: out Status) return Event is
+      ev_handle: Event_ID;
+      event_ids: opencl.Events(events_to_wait_for'Range);
+      glob_offs: constant Offsets(glob_ws'Range) := (others => 0);
+   begin
+      for i in 1 .. event_ids'Length loop
+         event_ids(i) := events_to_wait_for(i).handle;
+      end loop;
+      return ev: Event do
+         code := opencl.Enqueue_Kernel(queue            => queue.handle,
+                                       kernel           => kern.handle,
+                                       global_offset    => glob_offs,
+                                       global_work_size => glob_ws,
+                                       local_work_size  => loc_ws,
+                                       event_wait_list  => event_ids,
+                                       event            => ev_handle);
+         ev.handle := ev_handle;
+      end return;
+   end Enqueue_Kernel;
+
    function Build(prog: in out Program'Class; device: in Device_ID; options: in String) return Status is
    begin
       return opencl.Build_Program(id      => prog.handle,
@@ -122,6 +143,12 @@ package body cl_objects is
    begin
       return opencl.Finish(queue.handle);
    end Finish;
+
+   function Address(buff: in out Buffer'Class) return System.Address is
+      package Addr_Conv is new System.Address_To_Access_Conversions(opencl.Mem_ID);
+   begin
+      return Addr_Conv.To_Address(buff.handle'Access);
+   end Address;
 
    generic
       type Handle_Type is new Raw_Address;
