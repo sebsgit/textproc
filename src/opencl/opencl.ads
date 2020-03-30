@@ -88,6 +88,10 @@ package opencl is
    type Context_Properties is (CONTEXT_PROP_PLATFORM);
    for Context_Properties use (CONTEXT_PROP_PLATFORM => cl_h.CL_CONTEXT_PLATFORM);
 
+   type Arch_Type is (ARCH_32, ARCH_64);
+   --TODO better check
+   function Get_OpenCL_Path(arch: Arch_Type) return String;
+
    function Init(path: String) return Status;
 
    function Get_Platforms(result_status: out Status) return Platforms;

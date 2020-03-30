@@ -64,6 +64,14 @@ package body PixelArray is
       return x < image.width and y < image.height and x >= 0 and y >= 0;
    end isInside;
 
+   function isEqual(source: in ImagePlane; target: in ImagePlane) return Boolean is
+   begin
+      if source.width /= target.width or source.height /= target.height then
+         return False;
+      end if;
+      return source.data.all = target.data.all;
+   end isEqual;
+
    function allPixels(img: in ImagePlane; condition: access function(px: Pixel) return Boolean) return Boolean is
    begin
       for y in 0 .. img.height - 1 loop

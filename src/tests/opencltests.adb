@@ -13,18 +13,6 @@ with Ada.Environment_Variables;
 
 package body OpenCLTests is
 
-   type Arch_Type is (ARCH_32, ARCH_64);
-   --TODO better check
-   function Get_OpenCL_Path(arch: Arch_Type) return String is
-      is_linux: constant Boolean := Ada.Environment_Variables.Exists("HOME");
-   begin
-      if is_linux then
-         return "TODO";
-      else
-         return (if arch = ARCH_64 then "C:/Windows/SysWOW64/OpenCL.dll" else "C:/Windows/System32/OpenCL.dll");
-      end if;
-   end Get_OpenCL_Path;
-
    procedure Register_Tests (T: in out TestCase) is
       use AUnit.Test_Cases.Registration;
    begin
@@ -39,7 +27,7 @@ package body OpenCLTests is
 
    procedure testLoad(T : in out Test_Cases.Test_Case'Class) is
       cl_status: opencl.Status;
-      path: constant String := Get_OpenCL_Path(ARCH_32);
+      path: constant String := opencl.Get_OpenCL_Path(ARCH_32);
    begin
       Assert(path'Length > 0, "invalid opencl path");
 

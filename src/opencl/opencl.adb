@@ -4,6 +4,7 @@ with Interfaces.C.Strings;
 with System; use System;
 with System.Address_Image;
 with System.Address_To_Access_Conversions;
+with Ada.Environment_Variables;
 
 with opencl_api_spec;
 with dl_loader;
@@ -51,6 +52,17 @@ package body opencl is
       end loop;
       return result;
    end Convert;
+
+   --TODO better check
+   function Get_OpenCL_Path(arch: Arch_Type) return String is
+      is_linux: constant Boolean := Ada.Environment_Variables.Exists("HOME");
+   begin
+      if is_linux then
+         return "TODO";
+      else
+         return (if arch = ARCH_64 then "C:/Windows/SysWOW64/OpenCL.dll" else "C:/Windows/System32/OpenCL.dll");
+      end if;
+   end Get_OpenCL_Path;
 
    function Init(path: String) return Status is
       result: Boolean;

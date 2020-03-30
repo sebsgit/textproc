@@ -4,6 +4,7 @@ with Interfaces.C;
 with Interfaces.C.Pointers;
 
 package PixelArray is
+   pragma Elaborate_Body;
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);
@@ -40,6 +41,7 @@ package PixelArray is
    function isInside(image: in ImagePlane; x, y: in Integer) return Boolean
      with Inline;
 
+   function isEqual(source: in ImagePlane; target: in ImagePlane) return Boolean;
    function allPixels(img: in ImagePlane; condition: access function(px: Pixel) return Boolean) return Boolean
      with Pre => (img.width > 0 and img.height > 0);
 
@@ -56,7 +58,7 @@ package PixelArray is
 
 private
    type Pixel_Buffer is array (Natural range <>) of aliased Interfaces.C.unsigned_char;
-   type Pixel_Buffer_Access is access Pixel_Buffer;
+   type Pixel_Buffer_Access is access all Pixel_Buffer;
 
    type ImagePlane is limited new Ada.Finalization.Limited_Controlled with record
       data: aliased Pixel_Buffer_Access;
