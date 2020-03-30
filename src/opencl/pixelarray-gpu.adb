@@ -18,6 +18,11 @@ package body PixelArray.Gpu is
       return img.height;
    end Get_Height;
 
+   function Get_Address(img: in out GpuImage) return System.Address is
+   begin
+      return img.data.Address;
+   end Get_Address;
+
    function Upload(ctx: in out Context'Class; flags: opencl.Mem_Flags; image: in out ImagePlane; status: out opencl.Status) return GpuImage is
       final_flags: opencl.Mem_Flags := flags;
    begin

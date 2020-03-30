@@ -10,4 +10,5 @@ package GpuImageTests is
 
    procedure initOpenCL(T: in out Test_Cases.Test_Case'Class);
    procedure testGpuImage(T : in out Test_Cases.Test_Case'Class);
+   procedure testGpuProcessing(T : in out Test_Cases.Test_Case'Class);
 end GpuImageTests;

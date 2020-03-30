@@ -28,31 +28,27 @@ package body ImageThresholds is
       end return;
    end simple;
 
-   function bernsenAdaptative(image: PixelArray.ImagePlane; radius: Positive; c_min: PixelArray.Pixel) return PixelArray.ImagePlane is
-      type MinMaxIntensity is record
-         min, max: PixelArray.Pixel;
-      end record;
-
-      function circleMinMax(image: PixelArray.ImagePlane; x, y: Natural; radius: Positive) return MinMaxIntensity is
-         result: MinMaxIntensity;
-      begin
-         result.max := 0;
-         result.min := 255;
-         for px in x - radius .. x + radius loop
-            if px > 0 and px < image.width then
-               for py in y - radius .. y + radius loop
-                  if py > 0 and py < image.height then
-                     if abs((x - px) ** 2 + (y - py) ** 2) < radius * radius then
-                        result.min := PixelArray.Pixel'Min(result.min, image.get(px, py));
-                        result.max := PixelArray.Pixel'Max(result.max, image.get(px, py));
-                     end if;
+   function circleMinMax(image: PixelArray.ImagePlane; x, y: Natural; radius: Positive) return MinMaxIntensity is
+      result: MinMaxIntensity;
+   begin
+      result.max := 0;
+      result.min := 255;
+      for px in x - radius .. x + radius loop
+         if px > 0 and px < image.width then
+            for py in y - radius .. y + radius loop
+               if py > 0 and py < image.height then
+                  if abs((x - px) ** 2 + (y - py) ** 2) < radius * radius then
+                     result.min := PixelArray.Pixel'Min(result.min, image.get(px, py));
+                     result.max := PixelArray.Pixel'Max(result.max, image.get(px, py));
                   end if;
-               end loop;
-            end if;
-         end loop;
-         return result;
-      end circleMinMax;
+               end if;
+            end loop;
+         end if;
+      end loop;
+      return result;
+   end circleMinMax;
 
+   function bernsenAdaptative(image: PixelArray.ImagePlane; radius: Positive; c_min: PixelArray.Pixel) return PixelArray.ImagePlane is
       minMax: MinMaxIntensity;
       threshold: PixelArray.Pixel;
    begin

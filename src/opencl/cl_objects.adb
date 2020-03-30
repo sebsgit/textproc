@@ -30,6 +30,11 @@ package body cl_objects is
       end return;
    end Create_Command_Queue;
 
+   function Create_Command_Queue(ctx: in out Context'Class; result_status: out Status) return Command_Queue is
+   begin
+      return Create_Command_Queue(ctx, ctx.device, result_status);
+   end Create_Command_Queue;
+
    function Create_Buffer(ctx: in out Context'Class; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Buffer is
    begin
       return buff: Buffer do
@@ -89,11 +94,22 @@ package body cl_objects is
       end return;
    end Enqueue_Kernel;
 
+   function Enqueue_Kernel(queue: in out Command_Queue'Class; kern: in out Kernel'Class; glob_ws: Dimensions; loc_ws: Dimensions; code: out Status) return Event is
+      no_events: Events(1 .. 0);
+   begin
+      return Enqueue_Kernel(queue, kern, glob_ws, loc_ws, no_events, code);
+   end Enqueue_Kernel;
+
    function Build(prog: in out Program'Class; device: in Device_ID; options: in String) return Status is
    begin
       return opencl.Build_Program(id      => prog.handle,
                                   device  => device,
                                   options => options);
+   end Build;
+
+   function Build(ctx: in out Context'Class; prog: in out Program'Class; options: in String) return Status is
+   begin
+      return Build(prog, ctx.device, options);
    end Build;
 
    function Get_Build_Log(prog: in out Program'Class; device: in Device_ID) return String is
@@ -102,6 +118,11 @@ package body cl_objects is
       return opencl.Get_Program_Build_Log(id            => prog.handle,
                                           device        => device,
                                           result_status => cl_stat);
+   end Get_Build_Log;
+
+   function Get_Build_Log(ctx: in out Context'Class; prog: in out Program'Class) return String is
+   begin
+      return Get_Build_Log(prog, ctx.device);
    end Get_Build_Log;
 
    function Create_Kernel(prog: in out Program'Class; name: in String; result_status: out Status) return Kernel is
@@ -127,6 +148,11 @@ package body cl_objects is
       return opencl.Wait_For_Events(event_ids);
    end Wait;
 
+   function Get_Handle(ev: in Event) return opencl.Event_ID is
+   begin
+      return ev.handle;
+   end Get_Handle;
+
    function Finish(queue: in out Command_Queue) return Status is
    begin
       return opencl.Finish(queue.handle);
@@ -137,6 +163,11 @@ package body cl_objects is
    begin
       return Addr_Conv.To_Address(buff.handle'Access);
    end Address;
+
+   function Get_ID(buff: in Buffer) return opencl.Mem_ID is
+   begin
+      return buff.handle;
+   end Get_ID;
 
    generic
       type Handle_Type is new Raw_Address;

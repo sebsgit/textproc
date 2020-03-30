@@ -1,6 +1,8 @@
 with cl_objects; use cl_objects;
 with opencl;
 
+with System;
+
 package PixelArray.Gpu is
    pragma Elaborate_Body;
    pragma Assertion_Policy (Pre => Check,
@@ -11,6 +13,8 @@ package PixelArray.Gpu is
 
    function Get_Width(img: in GpuImage) return Natural;
    function Get_Height(img: in GpuImage) return Natural;
+
+   function Get_Address(img: in out GpuImage) return System.Address;
 
    function Upload(ctx: in out Context'Class; flags: opencl.Mem_Flags; image: in out ImagePlane; status: out opencl.Status) return GpuImage;
    function Download(queue: in out Command_Queue'Class; source: in out GpuImage; target: in out ImagePlane; status: out opencl.Status) return Event
