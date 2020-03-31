@@ -16,6 +16,7 @@ package cl_objects is
    type Command_Queue is tagged limited private;
    type Buffer is tagged limited private;
 
+   type Context_Access is access all Context;
    type Command_Queue_Access is access all Command_Queue;
    type Program_Access is access all Program;
    type Kernel_Access is access all Kernel;

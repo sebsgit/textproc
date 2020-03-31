@@ -15,7 +15,68 @@ with Ada.Strings.Unbounded;
 
 use Ada.Containers;
 
+with GpuImageProc;
+with cl_objects;
+with opencl; use opencl;
+
 package body ShapeDatabase is
+
+   gpu_context: cl_objects.Context_Access;
+   gpu_processor: GpuImageProc.Processor_Access;
+
+   procedure Find_Gpu_Device(platf: out Platform_ID; dev: out Device_ID) is
+      cl_code: opencl.Status;
+      platform_ids: constant opencl.Platforms := opencl.Get_Platforms(cl_code);
+   begin
+      if cl_code = opencl.SUCCESS then
+         for p_id of platform_ids loop
+            declare
+               device_ids: constant opencl.Devices := opencl.Get_Devices(id            => p_id,
+                                                                         dev_type      => opencl.DEVICE_TYPE_GPU,
+                                                                         result_status => cl_code);
+            begin
+               if cl_code = opencl.SUCCESS and device_ids'Length > 0 then
+                  platf := p_id;
+                  dev := device_ids(1);
+                  exit;
+               end if;
+            end;
+         end loop;
+      end if;
+   end Find_Gpu_Device;
+
+   procedure Init_Gpu is
+      cl_status: opencl.Status := opencl.Init(opencl.Get_OpenCL_Path(opencl.ARCH_32));
+      platf_id: opencl.Platform_ID := 0;
+      dev_id: opencl.Device_ID := 0;
+   begin
+      if cl_status /= opencl.SUCCESS then
+         Ada.Text_IO.Put_Line("Cannot init OpenCL: " & cl_status'Image);
+         return;
+      end if;
+
+      Find_Gpu_Device(platf_id, dev_id);
+      if dev_id = 0 then
+         Ada.Text_IO.Put_Line("Cannot find GPU device");
+         return;
+      end if;
+
+      gpu_context := new cl_objects.Context'(cl_objects.Create(context_platform => platf_id,
+                                                               context_device   => dev_id,
+                                                               result_status    => cl_status));
+      if cl_status /= opencl.SUCCESS then
+         Ada.Text_IO.Put_Line("Cannot init GPU context: " & cl_status'Image);
+         return;
+      end if;
+
+      gpu_processor := new GpuImageProc.Processor'(GpuImageProc.Create_Processor(context => gpu_context.all,
+                                                                                 status  => cl_status));
+
+      if cl_status /= opencl.SUCCESS then
+         Ada.Text_IO.Put_Line("Cannot init GPU processor: " & cl_status'Image);
+         return;
+      end if;
+   end Init_Gpu;
 
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane is
    begin
@@ -161,5 +222,6 @@ package body ShapeDatabase is
       return result;
    end init;
 begin
+   Init_Gpu;
    staticDB := init;
 end ShapeDatabase;

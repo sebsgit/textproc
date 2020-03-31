@@ -11,6 +11,7 @@ package GpuImageProc is
                             Type_Invariant => Check);
 
    type Processor is tagged limited private;
+   type Processor_Access is access all Processor;
 
    function Create_Processor(context: in out cl_objects.Context; status: out opencl.Status) return Processor;
    function Get_Command_Queue(proc: in out Processor) return cl_objects.Command_Queue_Access;

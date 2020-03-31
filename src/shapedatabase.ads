@@ -10,6 +10,7 @@ with Ada.Containers.Vectors;
 with Ada.Directories;
 
 package ShapeDatabase is
+   pragma Elaborate_Body;
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);
