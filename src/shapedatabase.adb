@@ -15,9 +15,10 @@ with Ada.Strings.Unbounded;
 
 use Ada.Containers;
 
-with GpuImageProc;
+with GpuImageProc; use GpuImageProc;
 with cl_objects;
 with opencl; use opencl;
+with PixelArray.Gpu;
 
 package body ShapeDatabase is
 
@@ -79,12 +80,47 @@ package body ShapeDatabase is
    end Init_Gpu;
 
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane is
+      fallback_to_cpu: Boolean := True;
    begin
+      --TODO implement the whole preprocessing pipeline in opencl
       return result: PixelArray.ImagePlane := ImageFilters.gaussian(image, 7, 2.4) do
          -- threshold adaptative
-         result.assign(ImageThresholds.bernsenAdaptative(result,
-                       radius => 10,
-                       c_min  => 35));
+         if gpu_processor /= null then
+            declare
+               cl_code: opencl.Status;
+               gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
+                                                                           flags  => (others => False),
+                                                                           image  => result,
+                                                                           status => cl_code);
+               gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
+                                                                           flags  => (others => False),
+                                                                           image  => result,
+                                                                           status => cl_code);
+               proc_event: cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
+                                                                                          source  => gpuSource,
+                                                                                          target  => gpuTarget,
+                                                                                          radius  => 10,
+                                                                                          c_min   => 35,
+                                                                                          cl_code => cl_code);
+            begin
+               cl_code := proc_event.Wait;
+               declare
+                  downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuTarget, result, cl_code);
+               begin
+                  cl_code := downl_ev.Wait;
+                  if cl_code = opencl.SUCCESS then
+                     fallback_to_cpu := False;
+                  end if;
+               end;
+            end;
+         end if;
+
+         if fallback_to_cpu then
+            Ada.Text_IO.Put_Line("GPU download failed, fallback to CPU");
+            result.assign(ImageThresholds.bernsenAdaptative(result,
+                          radius => 10,
+                          c_min  => 35));
+         end if;
          -- apply morphology to strenghten shapes
          result.assign(Morphology.erode(result, 7));
          result.assign(Morphology.dilate(result, 7));

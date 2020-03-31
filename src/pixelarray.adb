@@ -14,6 +14,13 @@ package body PixelArray is
       end return;
    end allocate;
 
+   function clone(img: ImagePlane) return ImagePlane is
+   begin
+      return res: ImagePlane := allocate(img.width, img.height) do
+         res.assign(img);
+      end return;
+   end clone;
+
    procedure assign(This: in out ImagePlane; other: in ImagePlane) is
    begin
       Free_Pixel_Buffer(This.data);

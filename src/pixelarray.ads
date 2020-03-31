@@ -24,6 +24,8 @@ package PixelArray is
    function allocate(width, height: Natural) return ImagePlane
      with Post => (width = allocate'Result.width);
 
+   function clone(img: ImagePlane) return ImagePlane;
+
    procedure assign(This: in out ImagePlane; other: in ImagePlane)
      with Inline;
 
