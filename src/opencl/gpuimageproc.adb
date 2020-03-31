@@ -11,15 +11,21 @@ with Ada.Text_IO;
 
 package body GpuImageProc is
 
+   package Int_Addr_Conv is new System.Address_To_Access_Conversions(Interfaces.C.int);
+   package Uchar_Addr_Conv is new System.Address_To_Access_Conversions(Interfaces.C.unsigned_char);
+
    NL: constant Character := Ada.Characters.Latin_1.LF;
 
    px_sample_proc_text: constant String :=
-     "uchar get_px(__global uchar *image, int w, int h, int x, int y) {" & NL &
+     "uchar get_px(__global const uchar *image, int w, int h, int x, int y) {" & NL &
      "   return image[x + y * w];" & NL &
-     "}" & NL;
+     "}" & NL &
+     "void set_px(__global uchar *image, int w, int h, int x, int y, uchar px) {" & NL &
+     "   image[x + y * w] = px;" & NL &
+     "}";
 
    circle_min_max_procedure_text: constant String :=
-     "void circle_min_max(__global uchar *image, int w, int h, int x, int y, int radius, uchar *min_max)" & NL &
+     "void circle_min_max(__global const uchar *image, int w, int h, int x, int y, int radius, uchar *min_max)" & NL &
      "{" & NL &
      "   uchar tmp[2]; tmp[0] = 255; tmp[1] = 0;" & NL &
      "   for (int curr_x = x - radius; curr_x < x + radius; ++curr_x) {" & NL &
@@ -36,12 +42,39 @@ package body GpuImageProc is
      "   min_max[0] = tmp[0]; min_max[1] = tmp[1];" & NL &
      "}" & NL;
 
+   bernsen_threshold_procedure_text: constant String :=
+     "__kernel void bernsen_adaptative_threshold(__global const uchar *input, __global uchar *output, int w, int h, int radius, uchar c_min)" & NL &
+     "{" & NL &
+     "   uchar min_max[2];" & NL &
+     "   const int px_x = get_global_id(0);" & NL &
+     "   const int px_y = get_global_id(1);" & NL &
+     "   circle_min_max(input, w, h, px_x, px_y, radius, min_max);" & NL &
+     "   const uchar threshold = (min_max[1] - min_max[0] >= c_min) ? (min_max[0] + min_max[1]) / 2 : 0;" & NL &
+     "   const uchar px_out = (get_px(input, w, h, px_x, px_y) > threshold) ? 255 : 0;" & NL &
+     "   set_px(output, w, h, px_x, px_y, px_out);" & NL &
+     "}" & NL;
+
+   combined_processing_kernel_source: constant String :=
+     px_sample_proc_text & NL &
+     circle_min_max_procedure_text & NL &
+     bernsen_threshold_procedure_text;
+
    procedure Finalize(This: in out Processor) is
       procedure Free_Queue is new Ada.Unchecked_Deallocation(Object => cl_objects.Command_Queue,
                                                              Name   => cl_objects.Command_Queue_Access);
+      procedure Free_Program is new Ada.Unchecked_Deallocation(Object => cl_objects.Program,
+                                                               Name   => cl_objects.Program_Access);
+      procedure Free_Kernel is new Ada.Unchecked_Deallocation(Object => cl_objects.Kernel,
+                                                              Name   => cl_objects.Kernel_Access);
    begin
       if This.queue /= null then
          Free_Queue(This.queue);
+      end if;
+      if This.bernsen_threshold_kernel /= null then
+         Free_Kernel(This.bernsen_threshold_kernel);
+      end if;
+      if This.program /= null then
+         Free_Program(This.program);
       end if;
    end Finalize;
 
@@ -49,8 +82,50 @@ package body GpuImageProc is
    begin
       return proc: Processor do
          proc.queue := new cl_objects.Command_Queue'(context.Create_Command_Queue(status));
+         if status = opencl.SUCCESS then
+            proc.program := new cl_objects.Program'(context.Create_Program(source        => combined_processing_kernel_source,
+                                                                           result_status => status));
+            if status = opencl.SUCCESS then
+               status := context.Build(prog    => proc.program.all,
+                                       options => "-w -Werror");
+               if status = opencl.BUILD_PROGRAM_FAILURE then
+                  Ada.Text_IO.Put_Line(context.Get_Build_Log(proc.program.all));
+               else
+                  proc.bernsen_threshold_kernel := new cl_objects.Kernel'(proc.program.all.Create_Kernel("bernsen_adaptative_threshold", status));
+               end if;
+            end if;
+         end if;
       end return;
    end Create_Processor;
+
+   function Get_Command_Queue(proc: in out Processor) return cl_objects.Command_Queue_Access is
+   begin
+      return proc.queue;
+   end Get_Command_Queue;
+
+   function Bernsen_Adaptative_Threshold(proc: in out Processor;
+                                         ctx: in out cl_objects.Context;
+                                         source: in out PixelArray.Gpu.GpuImage;
+                                         target: in out PixelArray.Gpu.GpuImage;
+                                         radius: in Positive;
+                                         c_min: in PixelArray.Pixel;
+                                         cl_code: out opencl.Status) return cl_objects.Event is
+      width_arg: aliased Interfaces.C.int := Interfaces.C.int(source.Get_Width);
+      height_arg: aliased Interfaces.C.int := Interfaces.C.int(source.Get_Height);
+      radius_arg: aliased Interfaces.C.int := Interfaces.C.int(radius);
+      c_min_arg: aliased Interfaces.C.unsigned_char := Interfaces.C.unsigned_char(c_min);
+   begin
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, source.Get_Address);
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, target.Get_Address);
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(2, 4, Int_Addr_Conv.To_Address(width_arg'Unchecked_Access));
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(3, 4, Int_Addr_Conv.To_Address(height_arg'Unchecked_Access));
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(4, 4, Int_Addr_Conv.To_Address(radius_arg'Unchecked_Access));
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(5, 1, Uchar_Addr_Conv.To_Address(c_min_arg'Unchecked_Access));
+      return proc.queue.Enqueue_Kernel(kern    => proc.bernsen_threshold_kernel.all,
+                                       glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
+                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       code    => cl_code);
+   end Bernsen_Adaptative_Threshold;
 
    procedure Circle_Min_Max(proc: in out Processor; ctx: in out cl_objects.Context; image: in out PixelArray.Gpu.GpuImage; x, y: Natural; radius: Positive; min, max: out PixelArray.Pixel) is
       cl_code: opencl.Status;
@@ -99,8 +174,6 @@ package body GpuImageProc is
          img_w_p: aliased Interfaces.C.int := Interfaces.C.int(image.Get_Width);
          img_h_p: aliased Interfaces.C.int := Interfaces.C.int(image.Get_Height);
          rad_p: aliased Interfaces.C.int := Interfaces.C.int(radius);
-
-         package Int_Addr_Conv is new System.Address_To_Access_Conversions(Interfaces.C.int);
       begin
          if cl_code /= opencl.SUCCESS then
             Ada.Text_IO.Put_Line("Processor::Circle_Min_Max kernel create: " & cl_code'Image);
@@ -113,11 +186,11 @@ package body GpuImageProc is
          end if;
 
          cl_code := kern.Set_Arg(0, opencl.Raw_Address'Size / 8, image.Get_Address);
-         cl_code := kern.Set_Arg(1, 4, Int_Addr_Conv.To_Address(img_w_p'Access));
-         cl_code := kern.Set_Arg(2, 4, Int_Addr_Conv.To_Address(img_h_p'Access));
-         cl_code := kern.Set_Arg(3, 4, Int_Addr_Conv.To_Address(x_p'Access));
-         cl_code := kern.Set_Arg(4, 4, Int_Addr_Conv.To_Address(y_p'Access));
-         cl_code := kern.Set_Arg(5, 4, Int_Addr_Conv.To_Address(rad_p'Access));
+         cl_code := kern.Set_Arg(1, 4, Int_Addr_Conv.To_Address(img_w_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(2, 4, Int_Addr_Conv.To_Address(img_h_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(3, 4, Int_Addr_Conv.To_Address(x_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(4, 4, Int_Addr_Conv.To_Address(y_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(5, 4, Int_Addr_Conv.To_Address(rad_p'Unchecked_Access));
          cl_code := kern.Set_Arg(6, opencl.Raw_Address'Size / 8, buff.Address);
 
          declare

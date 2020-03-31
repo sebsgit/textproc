@@ -17,6 +17,8 @@ package cl_objects is
    type Buffer is tagged limited private;
 
    type Command_Queue_Access is access all Command_Queue;
+   type Program_Access is access all Program;
+   type Kernel_Access is access all Kernel;
 
    function Create(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context
      with Pre => context_platform /= 0 and context_device /= 0;
@@ -48,6 +50,8 @@ package cl_objects is
    function Wait(ev: in out Event) return Status;
    function Get_Handle(ev: in Event) return opencl.Event_ID;
    function Finish(queue: in out Command_Queue) return Status;
+
+   function Create_Empty return Event;
 
 private
    type Context is limited new Ada.Finalization.Limited_Controlled with record

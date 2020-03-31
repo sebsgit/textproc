@@ -153,6 +153,13 @@ package body cl_objects is
       return ev.handle;
    end Get_Handle;
 
+   function Create_Empty return Event is
+   begin
+      return ev: Event do
+         ev.handle := 0;
+      end return;
+   end Create_Empty;
+
    function Finish(queue: in out Command_Queue) return Status is
    begin
       return opencl.Finish(queue.handle);
