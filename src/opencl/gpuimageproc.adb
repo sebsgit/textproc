@@ -19,7 +19,7 @@ package body GpuImageProc is
      "}" & NL;
 
    circle_min_max_procedure_text: constant String :=
-     "void circle_min_max(__global uchar *image, int w, int h, int x, int y, int radius, __global uchar *min_max)" & NL &
+     "void circle_min_max(__global uchar *image, int w, int h, int x, int y, int radius, uchar *min_max)" & NL &
      "{" & NL &
      "   uchar tmp[2]; tmp[0] = 255; tmp[1] = 0;" & NL &
      "   for (int curr_x = x - radius; curr_x < x + radius; ++curr_x) {" & NL &
@@ -54,7 +54,14 @@ package body GpuImageProc is
 
    procedure Circle_Min_Max(proc: in out Processor; ctx: in out cl_objects.Context; image: in out PixelArray.Gpu.GpuImage; x, y: Natural; radius: Positive; min, max: out PixelArray.Pixel) is
       cl_code: opencl.Status;
-      prog: cl_objects.Program := ctx.Create_Program(source        => px_sample_proc_text & " __kernel " & circle_min_max_procedure_text,
+      wrapped_min_max_kernel: constant String :=
+        "__kernel void circle_min_max_wrap(__global uchar *image, int w, int h, int x, int y, int radius, __global uchar *min_max)" & NL &
+        "{" & NL &
+        "   uchar min_max_loc[2];" & NL &
+        "   circle_min_max(image, w, h, x, y, radius, min_max_loc);" & NL &
+        "   min_max[0] = min_max_loc[0]; min_max[1] = min_max_loc[1];" & NL &
+        "}" & NL;
+      prog: cl_objects.Program := ctx.Create_Program(source        => px_sample_proc_text & circle_min_max_procedure_text & wrapped_min_max_kernel,
                                                      result_status => cl_code);
    begin
       min := 0;
@@ -73,7 +80,7 @@ package body GpuImageProc is
       end if;
 
       declare
-         kern: cl_objects.Kernel := prog.Create_Kernel(name          => "circle_min_max",
+         kern: cl_objects.Kernel := prog.Create_Kernel(name          => "circle_min_max_wrap",
                                                        result_status => cl_code);
          buffer_status: opencl.Status;
 
