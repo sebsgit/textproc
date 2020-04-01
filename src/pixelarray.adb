@@ -1,5 +1,6 @@
 with Ada.Text_IO;
 with Ada.Unchecked_Deallocation;
+with Ada.Numerics.Elementary_Functions;
 
 package body PixelArray is
    procedure Free_Pixel_Buffer is new Ada.Unchecked_Deallocation(Object => Pixel_Buffer,
@@ -78,6 +79,17 @@ package body PixelArray is
       end if;
       return source.data.all = target.data.all;
    end isEqual;
+
+   function distanceRMS(source: in ImagePlane; target: in ImagePlane) return Float is
+      result: Float := 0.0;
+   begin
+      for y in 0 .. source.height - 1 loop
+         for x in 0 .. source.width - 1 loop
+            result := result + Float(source.get(x, y) - target.get(x, y)) ** 2;
+         end loop;
+      end loop;
+      return Ada.Numerics.Elementary_Functions.Sqrt(result) / Float(source.width * source.height);
+   end distanceRMS;
 
    function allPixels(img: in ImagePlane; condition: access function(px: Pixel) return Boolean) return Boolean is
    begin

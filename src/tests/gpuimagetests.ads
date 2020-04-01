@@ -12,4 +12,5 @@ package GpuImageTests is
    procedure testGpuImage(T : in out Test_Cases.Test_Case'Class);
    procedure testGpuProcessing(T : in out Test_Cases.Test_Case'Class);
    procedure testGpuBernsenThreshold(T : in out Test_Cases.Test_Case'Class);
+   procedure testGpuGaussianFilter(T: in out Test_Cases.Test_Case'Class);
 end GpuImageTests;

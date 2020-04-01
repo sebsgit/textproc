@@ -44,6 +44,8 @@ package PixelArray is
      with Inline;
 
    function isEqual(source: in ImagePlane; target: in ImagePlane) return Boolean;
+   function distanceRMS(source: in ImagePlane; target: in ImagePlane) return Float
+     with Pre => source.width = target.width and source.height = target.height;
    function allPixels(img: in ImagePlane; condition: access function(px: Pixel) return Boolean) return Boolean
      with Pre => (img.width > 0 and img.height > 0);
 

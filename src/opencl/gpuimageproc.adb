@@ -57,8 +57,8 @@ package body GpuImageProc is
      "   const int px_x = get_global_id(0);" & NL &
      "   const int px_y = get_global_id(1);" & NL &
      "   float px_sum = 0.0;" & NL &
-     "   for (int x=-size; x<size; ++x) {" & NL &
-     "      for (int y=-size; y<size; ++y) {" & NL &
+     "   for (int x=-size; x<=size; ++x) {" & NL &
+     "      for (int y=-size; y<=size; ++y) {" & NL &
      "         const int index = (x + size) + (y + size) * (2 * size + 1);" & NL &
      "         if ((px_x + x >= 0) && (px_x + x < w) && (px_y + y >= 0) && (px_y + y < h)) {" & NL &
      "            px_sum += gauss_kernel[index] * (float)(get_px(input, w, h, px_x + x, px_y + y));" & NL &
@@ -166,8 +166,8 @@ package body GpuImageProc is
       size_arg: aliased cl_int := cl_int(size);
       gauss_kernel: aliased ImageFilters.Kernel := ImageFilters.generateKernel(size  => size,
                                                                                sigma => sigma);
-      gauss_kernel_buffer: cl_objects.Buffer := ctx.Create_Buffer(flags         => (opencl.WRITE_ONLY => True, opencl.KERNEL_READ_WRITE => True, others => False),
-                                                                  size          => size * 4, --TODO cl_float
+      gauss_kernel_buffer: cl_objects.Buffer := ctx.Create_Buffer(flags         => (opencl.COPY_HOST_PTR => True, others => False),
+                                                                  size          => gauss_kernel'Length * 4,
                                                                   host_ptr      => Kernel_Arr_Address_Conv.To_Address(gauss_kernel'Access),
                                                                   result_status => cl_code);
    begin

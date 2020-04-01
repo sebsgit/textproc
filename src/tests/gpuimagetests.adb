@@ -9,6 +9,7 @@ with opencl; use opencl;
 with cl_objects;
 with GpuImageProc;
 with ImageThresholds;
+with ImageFilters;
 
 package body GpuImageTests is
 
@@ -19,6 +20,7 @@ package body GpuImageTests is
       Register_Routine (T, testGpuImage'Access, "Gpu image test");
       Register_Routine (T, testGpuProcessing'Access, "Gpu image processing");
       Register_Routine (T, testGpuBernsenThreshold'Access, "Gpu Bernsen Threshold");
+      Register_Routine (T, testGpuGaussianFilter'Access, "Gpu Gaussian Filter");
    end Register_Tests;
 
    function Name(T: TestCase) return Test_String is
@@ -189,5 +191,59 @@ package body GpuImageTests is
          end;
       end;
    end testGpuBernsenThreshold;
+
+   procedure testGpuGaussianFilter(T : in out Test_Cases.Test_Case'Class) is
+      platf_id: opencl.Platform_ID := 0;
+      dev_id: opencl.Device_ID := 0;
+      cl_code: opencl.Status;
+      input: PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
+      target: PixelArray.ImagePlane := PixelArray.allocate(width  => input.width,
+                                                           height => input.height);
+      target_cpu: constant PixelArray.ImagePlane := ImageFilters.gaussian(image => input,
+                                                                          size  => 7,
+                                                                          sigma => 2.4);
+   begin
+      Find_Gpu_Device(platf_id, dev_id);
+      Assert(platf_id /= 0, "no platform");
+      Assert(dev_id /= 0, "no device");
+      declare
+         context: cl_objects.Context := cl_objects.Create(context_platform => platf_id,
+                                                          context_device   => dev_id,
+                                                          result_status    => cl_code);
+         gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => context,
+                                                                     flags  => (others => False),
+                                                                     image  => input,
+                                                                     status => cl_code);
+         gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => context,
+                                                                     flags  => (others => False),
+                                                                     image  => target,
+                                                                     status => cl_code);
+         proc: GpuImageProc.Processor := GpuImageProc.Create_Processor(context => context,
+                                                                       status  => cl_code);
+      begin
+         Assert(cl_code = opencl.SUCCESS, "Create processor: " & cl_code'Image);
+         declare
+            proc_event: cl_objects.Event := proc.Gaussian_Filter(ctx     => context,
+                                                                 source  => gpuSource,
+                                                                 target  => gpuTarget,
+                                                                 size    => 7,
+                                                                 sigma   => 2.4,
+                                                                 cl_code => cl_code);
+         begin
+            Assert(cl_code = opencl.SUCCESS, "Run GPU gaussian filter: " & cl_code'Image);
+            cl_code := proc_event.Wait;
+            Assert(cl_code = opencl.SUCCESS, "wait for kernel: " & cl_code'Image);
+            declare
+               downl_ev: cl_objects.Event := PixelArray.Gpu.Download(proc.Get_Command_Queue.all, gpuTarget, target, cl_code);
+            begin
+               Assert(cl_code = opencl.SUCCESS, "Gpu download failed " & cl_code'Image);
+               cl_code := downl_ev.Wait;
+               Assert(cl_code = opencl.SUCCESS, "wait failed " & cl_code'Image);
+               Ada.Text_IO.Put_Line("Gaussian Filter CPU / GPU RMS distance: " & target.distanceRMS(target_cpu)'Image);
+               Assert(target.distanceRMS(target_cpu) < 1.0, "Gaussian filter GPU failed");
+            end;
+         end;
+      end;
+   end testGpuGaussianFilter;
 
 end GpuImageTests;
