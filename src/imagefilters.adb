@@ -3,15 +3,12 @@ with Ada.Numerics;
 with Ada.Numerics.Generic_Elementary_Functions;
 
 package body ImageFilters is
-   function gaussian(image: PixelArray.ImagePlane; size: Positive; sigma: Float) return PixelArray.ImagePlane is
-      type Kernel is array (Natural range <>) of Float;
+   package FloatFunc is new Ada.Numerics.Generic_Elementary_Functions(Float_Type => Float);
+
+   function generateKernel(size: Positive; sigma: Float) return Kernel is
       k: Kernel (0 .. (2 * size + 1) * (2 * size + 1));
-      result: PixelArray.ImagePlane;
       sigma2: constant Float := sigma * sigma;
       index: Natural;
-      tmpSum: Float;
-
-      package FloatFunc is new Ada.Numerics.Generic_Elementary_Functions(Float_Type => Float);
    begin
       for y in -size .. size loop
          for x in -size .. size loop
@@ -19,6 +16,15 @@ package body ImageFilters is
             k(index) := (1.0 / (2.0 * Ada.Numerics.Pi * sigma2)) * (FloatFunc.Exp(- (Float(x * x + y * y)) / (2.0 * sigma2)));
          end loop;
       end loop;
+      return k;
+   end generateKernel;
+
+   function gaussian(image: PixelArray.ImagePlane; size: Positive; sigma: Float) return PixelArray.ImagePlane is
+      k: constant Kernel := generateKernel(size, sigma);
+      result: PixelArray.ImagePlane;
+      index: Natural;
+      tmpSum: Float;
+   begin
       return result: PixelArray.ImagePlane := PixelArray.allocate(image.width, image.height) do
          for py in 0 .. image.height - 1 loop
             for px in 0 .. image.width - 1 loop
