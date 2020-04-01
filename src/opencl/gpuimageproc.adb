@@ -4,6 +4,7 @@ with PixelArray.Gpu;
 with Interfaces.C;
 with System;
 with System.Address_To_Access_Conversions;
+with ImageFilters;
 
 with Ada.Unchecked_Deallocation;
 with Ada.Characters.Latin_1;
@@ -50,9 +51,29 @@ package body GpuImageProc is
      "   set_px(output, w, h, px_x, px_y, px_out);" & NL &
      "}" & NL;
 
+   gaussian_filter_procedure_text: constant String :=
+     "__kernel void gaussian_filter(__global const uchar *input, __global uchar *output, int w, int h, int size, __global const float *gauss_kernel)" & NL &
+     "{" & NL &
+     "   const int px_x = get_global_id(0);" & NL &
+     "   const int px_y = get_global_id(1);" & NL &
+     "   float px_sum = 0.0;" & NL &
+     "   for (int x=-size; x<size; ++x) {" & NL &
+     "      for (int y=-size; y<size; ++y) {" & NL &
+     "         const int index = (x + size) + (y + size) * (2 * size + 1);" & NL &
+     "         if ((px_x + x >= 0) && (px_x + x < w) && (px_y + y >= 0) && (px_y + y < h)) {" & NL &
+     "            px_sum += gauss_kernel[index] * (float)(get_px(input, w, h, px_x + x, px_y + y));" & NL &
+     "         } else {" & NL &
+     "            px_sum += gauss_kernel[index] * (float)(get_px(input, w, h, px_x, px_y));" & NL &
+     "         }" & NL &
+     "      }" & NL &
+     "   }" & NL &
+     "   set_px(output, w, h, px_x, px_y, (px_sum > 255.0 ? 255 : (uchar)(px_sum)));" & NL &
+     "}" & NL;
+
    combined_processing_kernel_source: constant String :=
      px_sample_proc_text & NL &
      circle_min_max_procedure_text & NL &
+     gaussian_filter_procedure_text & NL &
      bernsen_threshold_procedure_text;
 
    procedure Finalize(This: in out Processor) is
@@ -68,6 +89,9 @@ package body GpuImageProc is
       end if;
       if This.bernsen_threshold_kernel /= null then
          Free_Kernel(This.bernsen_threshold_kernel);
+      end if;
+      if This.gaussian_blur_kernel /= null then
+         Free_Kernel(This.gaussian_blur_kernel);
       end if;
       if This.program /= null then
          Free_Program(This.program);
@@ -88,6 +112,9 @@ package body GpuImageProc is
                   Ada.Text_IO.Put_Line(context.Get_Build_Log(proc.program.all));
                else
                   proc.bernsen_threshold_kernel := new cl_objects.Kernel'(proc.program.all.Create_Kernel("bernsen_adaptative_threshold", status));
+                  if status = opencl.SUCCESS then
+                     proc.gaussian_blur_kernel := new cl_objects.Kernel'(proc.program.all.Create_Kernel("gaussian_filter", status));
+                  end if;
                end if;
             end if;
          end if;
@@ -122,6 +149,39 @@ package body GpuImageProc is
                                        loc_ws  => (1 => 1, 2 => 1),--TODO
                                        code    => cl_code);
    end Bernsen_Adaptative_Threshold;
+
+   function Gaussian_Filter(proc: in out Processor;
+                            ctx: in out cl_objects.Context;
+                            source: in out PixelArray.Gpu.GpuImage;
+                            target: in out PixelArray.Gpu.GpuImage;
+                            size: in Positive;
+                            sigma: in Float;
+                            cl_code: out opencl.Status) return cl_objects.Event is
+      pragma Warnings(Off);
+      package Kernel_Arr_Address_Conv is new System.Address_To_Access_Conversions(Object => ImageFilters.Kernel);
+      pragma Warnings(On);
+
+      width_arg: aliased cl_int := cl_int(source.Get_Width);
+      height_arg: aliased cl_int := cl_int(source.Get_Height);
+      size_arg: aliased cl_int := cl_int(size);
+      gauss_kernel: aliased ImageFilters.Kernel := ImageFilters.generateKernel(size  => size,
+                                                                               sigma => sigma);
+      gauss_kernel_buffer: cl_objects.Buffer := ctx.Create_Buffer(flags         => (opencl.WRITE_ONLY => True, opencl.KERNEL_READ_WRITE => True, others => False),
+                                                                  size          => size * 4, --TODO cl_float
+                                                                  host_ptr      => Kernel_Arr_Address_Conv.To_Address(gauss_kernel'Access),
+                                                                  result_status => cl_code);
+   begin
+      cl_code := proc.gaussian_blur_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, source.Get_Address);
+      cl_code := proc.gaussian_blur_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, target.Get_Address);
+      cl_code := proc.gaussian_blur_kernel.Set_Arg(2, 4, cl_int_addr.To_Address(width_arg'Unchecked_Access));
+      cl_code := proc.gaussian_blur_kernel.Set_Arg(3, 4, cl_int_addr.To_Address(height_arg'Unchecked_Access));
+      cl_code := proc.gaussian_blur_kernel.Set_Arg(4, 4, cl_int_addr.To_Address(size_arg'Unchecked_Access));
+      cl_code := proc.gaussian_blur_kernel.Set_Arg(5, opencl.Raw_Address'Size / 8, gauss_kernel_buffer.Address);
+      return proc.queue.Enqueue_Kernel(kern    => proc.gaussian_blur_kernel.all,
+                                       glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
+                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       code    => cl_code);
+   end Gaussian_Filter;
 
    procedure Circle_Min_Max(proc: in out Processor; ctx: in out cl_objects.Context; image: in out PixelArray.Gpu.GpuImage; x, y: Natural; radius: Positive; min, max: out PixelArray.Pixel) is
       cl_code: opencl.Status;

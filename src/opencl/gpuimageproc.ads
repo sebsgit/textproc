@@ -26,6 +26,14 @@ package GpuImageProc is
                                          cl_code: out opencl.Status) return cl_objects.Event
      with Pre => source.Get_Width = target.Get_Width and source.Get_Height = target.Get_Height;
 
+   function Gaussian_Filter(proc: in out Processor;
+                            ctx: in out cl_objects.Context;
+                            source: in out PixelArray.Gpu.GpuImage;
+                            target: in out PixelArray.Gpu.GpuImage;
+                            size: in Positive;
+                            sigma: in Float;
+                            cl_code: out opencl.Status) return cl_objects.Event;
+
    -- exposed for unit tests
    procedure Circle_Min_Max(proc: in out Processor; ctx: in out cl_objects.Context; image: in out PixelArray.Gpu.GpuImage; x, y: Natural; radius: Positive; min, max: out PixelArray.Pixel);
 
@@ -34,6 +42,7 @@ private
       queue: cl_objects.Command_Queue_Access;
       program: cl_objects.Program_Access;
       bernsen_threshold_kernel: cl_objects.Kernel_Access;
+      gaussian_blur_kernel: cl_objects.Kernel_Access;
    end record;
 
    overriding procedure Finalize(This: in out Processor);
