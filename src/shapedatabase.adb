@@ -83,7 +83,7 @@ package body ShapeDatabase is
       fallback_to_cpu: Boolean := True;
    begin
       --TODO implement the whole preprocessing pipeline in opencl
-      return result: PixelArray.ImagePlane := ImageFilters.gaussian(image, 7, 2.4) do
+      return result: PixelArray.ImagePlane := image.clone do
          -- threshold adaptative
          if gpu_processor /= null then
             declare
@@ -96,27 +96,38 @@ package body ShapeDatabase is
                                                                            flags  => (others => False),
                                                                            image  => result,
                                                                            status => cl_code);
-               proc_event: cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
-                                                                                          source  => gpuSource,
-                                                                                          target  => gpuTarget,
-                                                                                          radius  => 10,
-                                                                                          c_min   => 35,
-                                                                                          cl_code => cl_code);
+               gauss_proc_event: cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
+                                                                                   source  => gpuSource,
+                                                                                   target  => gpuTarget,
+                                                                                   size    => 7,
+                                                                                   sigma   => 2.4,
+                                                                                   cl_code => cl_code);
             begin
-               cl_code := proc_event.Wait;
+               cl_code := gauss_proc_event.Wait;
                declare
-                  downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuTarget, result, cl_code);
+                  proc_event: cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
+                                                                                             source  => gpuTarget,
+                                                                                             target  => gpuSource,
+                                                                                             radius  => 10,
+                                                                                             c_min   => 35,
+                                                                                             cl_code => cl_code);
                begin
-                  cl_code := downl_ev.Wait;
-                  if cl_code = opencl.SUCCESS then
-                     fallback_to_cpu := False;
-                  end if;
+                  cl_code := proc_event.Wait;
+                  declare
+                     downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, cl_code);
+                  begin
+                     cl_code := downl_ev.Wait;
+                     if cl_code = opencl.SUCCESS then
+                        fallback_to_cpu := False;
+                     end if;
+                  end;
                end;
             end;
          end if;
 
          if fallback_to_cpu then
             Ada.Text_IO.Put_Line("GPU download failed, fallback to CPU");
+            result.assign(ImageFilters.gaussian(image, 7, 2.4));
             result.assign(ImageThresholds.bernsenAdaptative(result,
                           radius => 10,
                           c_min  => 35));
