@@ -10,10 +10,6 @@ with Ada.Characters.Latin_1;
 with Ada.Text_IO;
 
 package body GpuImageProc is
-
-   package Int_Addr_Conv is new System.Address_To_Access_Conversions(Interfaces.C.int);
-   package Uchar_Addr_Conv is new System.Address_To_Access_Conversions(Interfaces.C.unsigned_char);
-
    NL: constant Character := Ada.Characters.Latin_1.LF;
 
    px_sample_proc_text: constant String :=
@@ -110,17 +106,17 @@ package body GpuImageProc is
                                          radius: in Positive;
                                          c_min: in PixelArray.Pixel;
                                          cl_code: out opencl.Status) return cl_objects.Event is
-      width_arg: aliased Interfaces.C.int := Interfaces.C.int(source.Get_Width);
-      height_arg: aliased Interfaces.C.int := Interfaces.C.int(source.Get_Height);
-      radius_arg: aliased Interfaces.C.int := Interfaces.C.int(radius);
-      c_min_arg: aliased Interfaces.C.unsigned_char := Interfaces.C.unsigned_char(c_min);
+      width_arg: aliased cl_int := cl_int(source.Get_Width);
+      height_arg: aliased cl_int := cl_int(source.Get_Height);
+      radius_arg: aliased cl_int := cl_int(radius);
+      c_min_arg: aliased cl_uchar := cl_uchar(c_min);
    begin
       cl_code := proc.bernsen_threshold_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, source.Get_Address);
       cl_code := proc.bernsen_threshold_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, target.Get_Address);
-      cl_code := proc.bernsen_threshold_kernel.Set_Arg(2, 4, Int_Addr_Conv.To_Address(width_arg'Unchecked_Access));
-      cl_code := proc.bernsen_threshold_kernel.Set_Arg(3, 4, Int_Addr_Conv.To_Address(height_arg'Unchecked_Access));
-      cl_code := proc.bernsen_threshold_kernel.Set_Arg(4, 4, Int_Addr_Conv.To_Address(radius_arg'Unchecked_Access));
-      cl_code := proc.bernsen_threshold_kernel.Set_Arg(5, 1, Uchar_Addr_Conv.To_Address(c_min_arg'Unchecked_Access));
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(2, 4, cl_int_addr.To_Address(width_arg'Unchecked_Access));
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(3, 4, cl_int_addr.To_Address(height_arg'Unchecked_Access));
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(4, 4, cl_int_addr.To_Address(radius_arg'Unchecked_Access));
+      cl_code := proc.bernsen_threshold_kernel.Set_Arg(5, 1, cl_uchar_addr.To_Address(c_min_arg'Unchecked_Access));
       return proc.queue.Enqueue_Kernel(kern    => proc.bernsen_threshold_kernel.all,
                                        glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
                                        loc_ws  => (1 => 1, 2 => 1),--TODO
@@ -169,11 +165,11 @@ package body GpuImageProc is
                                                       size          => 2 * 8,
                                                       host_ptr      => System.Null_Address,
                                                       result_status => buffer_status);
-         x_p: aliased Interfaces.C.int := Interfaces.C.int(x);
-         y_p: aliased Interfaces.C.int := Interfaces.C.int(y);
-         img_w_p: aliased Interfaces.C.int := Interfaces.C.int(image.Get_Width);
-         img_h_p: aliased Interfaces.C.int := Interfaces.C.int(image.Get_Height);
-         rad_p: aliased Interfaces.C.int := Interfaces.C.int(radius);
+         x_p: aliased cl_int := cl_int(x);
+         y_p: aliased cl_int := cl_int(y);
+         img_w_p: aliased cl_int := cl_int(image.Get_Width);
+         img_h_p: aliased cl_int := cl_int(image.Get_Height);
+         rad_p: aliased cl_int := cl_int(radius);
       begin
          if cl_code /= opencl.SUCCESS then
             Ada.Text_IO.Put_Line("Processor::Circle_Min_Max kernel create: " & cl_code'Image);
@@ -186,11 +182,11 @@ package body GpuImageProc is
          end if;
 
          cl_code := kern.Set_Arg(0, opencl.Raw_Address'Size / 8, image.Get_Address);
-         cl_code := kern.Set_Arg(1, 4, Int_Addr_Conv.To_Address(img_w_p'Unchecked_Access));
-         cl_code := kern.Set_Arg(2, 4, Int_Addr_Conv.To_Address(img_h_p'Unchecked_Access));
-         cl_code := kern.Set_Arg(3, 4, Int_Addr_Conv.To_Address(x_p'Unchecked_Access));
-         cl_code := kern.Set_Arg(4, 4, Int_Addr_Conv.To_Address(y_p'Unchecked_Access));
-         cl_code := kern.Set_Arg(5, 4, Int_Addr_Conv.To_Address(rad_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(1, 4, cl_int_addr.To_Address(img_w_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(2, 4, cl_int_addr.To_Address(img_h_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(3, 4, cl_int_addr.To_Address(x_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(4, 4, cl_int_addr.To_Address(y_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(5, 4, cl_int_addr.To_Address(rad_p'Unchecked_Access));
          cl_code := kern.Set_Arg(6, opencl.Raw_Address'Size / 8, buff.Address);
 
          declare

@@ -13,12 +13,6 @@ package body opencl is
 
    use opencl_api_spec;
 
-   type cl_int is new Interfaces.C.int;
-   type cl_uint is new Interfaces.C.unsigned;
-   type cl_bool is new cl_uint;
-   type cl_ulong is mod 2 ** 64;
-   type cl_mem_flags is new cl_ulong;
-
    type C_Address_Array is array (Interfaces.C.size_t range 1 .. 64) of aliased Raw_Address;
    type C_Char_Buffer is array (Interfaces.C.size_t range 1 .. 1024) of aliased Interfaces.C.char;
    type C_SizeT_Array is array (Interfaces.C.size_t range 1 .. 64) of aliased Interfaces.C.size_t;
