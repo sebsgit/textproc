@@ -16,9 +16,6 @@ package opencl is
    type cl_ulong is mod 2 ** 64;
    type cl_mem_flags is new cl_ulong;
 
-   package cl_int_addr is new System.Address_To_Access_Conversions(Object => cl_int);
-   package cl_uchar_addr is new System.Address_To_Access_Conversions(Object => cl_uchar);
-
    type Status is (INVALID_GLOBAL_WORK_SIZE, INVALID_OPERATION, INVALID_EVENT_WAIT_LIST, INVALID_WORK_GROUP_SIZE, INVALID_KERNEL_ARGS, INVALID_ARG_SIZE, INVALID_PROGRAM_EXECUTABLE, INVALID_MEM_OBJECT, INVALID_CONTEXT, INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
    for Status use (INVALID_GLOBAL_WORK_SIZE => cl_h.CL_INVALID_GLOBAL_WORK_SIZE,
                    INVALID_OPERATION => cl_h.CL_INVALID_OPERATION,
