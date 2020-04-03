@@ -128,6 +128,25 @@ package body GpuImageProc is
      erode_procedure_text & NL &
      dilate_procedure_text & NL;
 
+   function Get_Local_Work_Size(width, height: in Positive) return opencl.Dimensions is
+      result: opencl.Dimensions := (1 => 1, 2 => 1);
+      preferred_multiples: constant opencl.Dimensions := (32, 16, 8, 4, 2);
+   begin
+      for m of preferred_multiples loop
+         if width rem m = 0 then
+            result(1) := m;
+            exit;
+         end if;
+      end loop;
+      for m of preferred_multiples loop
+         if height rem m = 0 then
+            result(2) := m;
+            exit;
+         end if;
+      end loop;
+      return result;
+   end Get_Local_Work_Size;
+
    procedure Finalize(This: in out Processor) is
       procedure Free_Queue is new Ada.Unchecked_Deallocation(Object => cl_objects.Command_Queue,
                                                              Name   => cl_objects.Command_Queue_Access);
@@ -236,7 +255,7 @@ package body GpuImageProc is
       cl_code := proc.bernsen_threshold_kernel.Set_Arg(5, 1, c_min_arg'Address);
       return proc.queue.Enqueue_Kernel(kern    => proc.bernsen_threshold_kernel.all,
                                        glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
-                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       loc_ws  => Get_Local_Work_Size(source.Get_Width, source.Get_Height),
                                        events_to_wait_for => events_to_wait,
                                        code    => cl_code);
    end Bernsen_Adaptative_Threshold;
@@ -270,7 +289,7 @@ package body GpuImageProc is
       cl_code := proc.gaussian_blur_kernel.Set_Arg(5, opencl.Raw_Address'Size / 8, gauss_kernel_buffer.Get_Address);
       return proc.queue.Enqueue_Kernel(kern    => proc.gaussian_blur_kernel.all,
                                        glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
-                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       loc_ws  => Get_Local_Work_Size(source.Get_Width, source.Get_Height),
                                        code    => cl_code);
    end Gaussian_Filter;
 
@@ -292,7 +311,7 @@ package body GpuImageProc is
       cl_code := proc.erode_kernel.Set_Arg(4, 4, size_arg'Address);
       return proc.queue.Enqueue_Kernel(kern    => proc.erode_kernel.all,
                                        glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
-                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       loc_ws  => Get_Local_Work_Size(source.Get_Width, source.Get_Height),
                                        events_to_wait_for => events_to_wait,
                                        code    => cl_code);
    end Erode;
@@ -315,7 +334,7 @@ package body GpuImageProc is
       cl_code := proc.dilate_kernel.Set_Arg(4, 4, size_arg'Address);
       return proc.queue.Enqueue_Kernel(kern    => proc.dilate_kernel.all,
                                        glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
-                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       loc_ws  => Get_Local_Work_Size(source.Get_Width, source.Get_Height),
                                        events_to_wait_for => events_to_wait,
                                        code    => cl_code);
    end Dilate;
