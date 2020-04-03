@@ -20,17 +20,17 @@ package body PixelArray.Gpu is
 
    function Get_Address(img: in out GpuImage) return System.Address is
    begin
-      return img.data.Address;
+      return img.data.Get_Address;
    end Get_Address;
 
-   function Upload(ctx: in out Context'Class; flags: opencl.Mem_Flags; image: in out ImagePlane; status: out opencl.Status) return GpuImage is
+   function Upload(ctx: in out Context'Class; flags: opencl.Mem_Flags; image: in ImagePlane; status: out opencl.Status) return GpuImage is
       final_flags: opencl.Mem_Flags := flags;
    begin
       final_flags(opencl.COPY_HOST_PTR) := True;
       final_flags(opencl.ALLOC_HOST_PTR) := False;
       return res: constant GpuImage := (data => ctx.Create_Buffer(flags         => final_flags,
                                                                   size          => image.width * image.height,
-                                                                  host_ptr      => Pixel_Buffer_Conv.To_Address(Pixel_Buffer_Conv.Object_Pointer(image.data)),
+                                                                  host_ptr      => image.data(0)'Address,
                                                                   result_status => status),
                                         width => image.width,
                                         height => image.height) do

@@ -45,7 +45,7 @@ package cl_objects is
      with Pre => name'Length > 0;
    function Set_Arg(kern: in out Kernel; index: Natural; size: Positive; address: System.Address) return Status;
 
-   function Address(buff: in out Buffer'Class) return System.Address;
+   function Get_Address(buff: in out Buffer'Class) return System.Address;
    function Get_ID(buff: in Buffer) return opencl.Mem_ID;
 
    function Wait(ev: in out Event) return Status;

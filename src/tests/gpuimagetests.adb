@@ -57,7 +57,7 @@ package body GpuImageTests is
    end initOpenCL;
 
    procedure testGpuImage(T : in out Test_Cases.Test_Case'Class) is
-      input: PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
+      input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
       target: PixelArray.ImagePlane := PixelArray.allocate(width  => input.width,
                                                            height => input.height);
       platf_id: opencl.Platform_ID := 0;
@@ -94,7 +94,7 @@ package body GpuImageTests is
       platf_id: opencl.Platform_ID := 0;
       dev_id: opencl.Device_ID := 0;
       cl_code: opencl.Status;
-      input: PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
+      input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
    begin
       Find_Gpu_Device(platf_id, dev_id);
       Assert(platf_id /= 0, "no platform");
@@ -143,7 +143,7 @@ package body GpuImageTests is
       platf_id: opencl.Platform_ID := 0;
       dev_id: opencl.Device_ID := 0;
       cl_code: opencl.Status;
-      input: PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
+      input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
       target: PixelArray.ImagePlane := PixelArray.allocate(width  => input.width,
                                                            height => input.height);
       target_cpu: constant PixelArray.ImagePlane := ImageThresholds.bernsenAdaptative(image  => input,
@@ -196,7 +196,7 @@ package body GpuImageTests is
       platf_id: opencl.Platform_ID := 0;
       dev_id: opencl.Device_ID := 0;
       cl_code: opencl.Status;
-      input: PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
+      input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
       target: PixelArray.ImagePlane := PixelArray.allocate(width  => input.width,
                                                            height => input.height);
       target_cpu: constant PixelArray.ImagePlane := ImageFilters.gaussian(image => input,

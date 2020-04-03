@@ -165,11 +165,11 @@ package body cl_objects is
       return opencl.Finish(queue.handle);
    end Finish;
 
-   function Address(buff: in out Buffer'Class) return System.Address is
+   function Get_Address(buff: in out Buffer'Class) return System.Address is
       package Addr_Conv is new System.Address_To_Access_Conversions(opencl.Mem_ID);
    begin
       return Addr_Conv.To_Address(buff.handle'Access);
-   end Address;
+   end Get_Address;
 
    function Get_ID(buff: in Buffer) return opencl.Mem_ID is
    begin

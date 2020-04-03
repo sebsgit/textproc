@@ -83,14 +83,15 @@ package body ShapeDatabase is
       fallback_to_cpu: Boolean := True;
    begin
       --TODO implement the whole preprocessing pipeline in opencl
-      return result: PixelArray.ImagePlane := image.clone do
+      return result: PixelArray.ImagePlane := PixelArray.allocate(width  => image.width,
+                                                                  height => image.height) do
          -- threshold adaptative
          if gpu_processor /= null then
             declare
                cl_code: opencl.Status;
                gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
                                                                            flags  => (others => False),
-                                                                           image  => result,
+                                                                           image  => image,
                                                                            status => cl_code);
                gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
                                                                            flags  => (others => False),

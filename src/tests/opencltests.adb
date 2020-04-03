@@ -209,7 +209,7 @@ package body OpenCLTests is
                            cl_status := kern2.Set_Arg(0, Interfaces.C.int'Size / 8, Addr_Conv.To_Address(source_value'Access));
                            Assert(cl_status = opencl.SUCCESS, "set arg 0: " & cl_status'Image);
 
-                           cl_status := kern2.Set_Arg(1, opencl.Raw_Address'Size / 8, buff.Address);
+                           cl_status := kern2.Set_Arg(1, opencl.Raw_Address'Size / 8, buff.Get_Address);
                            Assert(cl_status = opencl.SUCCESS, "set arg 1: " & cl_status'Image);
 
                            declare

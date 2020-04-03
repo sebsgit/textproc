@@ -176,7 +176,7 @@ package body GpuImageProc is
       cl_code := proc.gaussian_blur_kernel.Set_Arg(2, 4, cl_int_addr.To_Address(width_arg'Unchecked_Access));
       cl_code := proc.gaussian_blur_kernel.Set_Arg(3, 4, cl_int_addr.To_Address(height_arg'Unchecked_Access));
       cl_code := proc.gaussian_blur_kernel.Set_Arg(4, 4, cl_int_addr.To_Address(size_arg'Unchecked_Access));
-      cl_code := proc.gaussian_blur_kernel.Set_Arg(5, opencl.Raw_Address'Size / 8, gauss_kernel_buffer.Address);
+      cl_code := proc.gaussian_blur_kernel.Set_Arg(5, opencl.Raw_Address'Size / 8, gauss_kernel_buffer.Get_Address);
       return proc.queue.Enqueue_Kernel(kern    => proc.gaussian_blur_kernel.all,
                                        glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
                                        loc_ws  => (1 => 1, 2 => 1),--TODO
@@ -242,12 +242,12 @@ package body GpuImageProc is
          end if;
 
          cl_code := kern.Set_Arg(0, opencl.Raw_Address'Size / 8, image.Get_Address);
-         cl_code := kern.Set_Arg(1, 4, cl_int_addr.To_Address(img_w_p'Unchecked_Access));
+         cl_code := kern.Set_Arg(1, 4, img_w_p'Address);
          cl_code := kern.Set_Arg(2, 4, cl_int_addr.To_Address(img_h_p'Unchecked_Access));
          cl_code := kern.Set_Arg(3, 4, cl_int_addr.To_Address(x_p'Unchecked_Access));
          cl_code := kern.Set_Arg(4, 4, cl_int_addr.To_Address(y_p'Unchecked_Access));
          cl_code := kern.Set_Arg(5, 4, cl_int_addr.To_Address(rad_p'Unchecked_Access));
-         cl_code := kern.Set_Arg(6, opencl.Raw_Address'Size / 8, buff.Address);
+         cl_code := kern.Set_Arg(6, opencl.Raw_Address'Size / 8, buff.Get_Address);
 
          declare
             run_ev: constant cl_objects.Event := proc.queue.Enqueue_Kernel(kern               => kern,
