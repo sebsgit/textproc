@@ -9,6 +9,8 @@ use Ada.Containers;
 --
 package body ImageRegions is
 
+   New_Region_Pixel_Threshold: constant Positive := 10;
+
    function toString(r: Rect) return String is
    begin
       return r.x'Image & ", " & r.y'Image & "; " & r.width'Image & "x" & r.height'Image;
@@ -123,7 +125,7 @@ package body ImageRegions is
             newRegion.pixelCount := data.pixelCount;
             newRegion.center := Centroid'(x => Float(data.sumX) / Float(data.pixelCount),
                                           y => Float(data.sumY) / Float(data.pixelCount));
-            if newRegion.pixelCount > 10 then
+            if newRegion.pixelCount > New_Region_Pixel_Threshold then
                result.Append(newRegion);
             end if;
          end;
