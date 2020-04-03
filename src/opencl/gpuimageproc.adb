@@ -107,11 +107,7 @@ package body GpuImageProc is
      "{" & NL &
      "   const int px_x = get_global_id(0);" & NL &
      "   const int px_y = get_global_id(1);" & NL &
-     "   for (int y = 0 ; y < h ; ++y) {" & NL &
-     "      for (int x = 0; x < w ; ++x) {" & NL &
-     "         set_px(output, w, h, px_x, px_y, patch_min(input, w, h, px_x, px_y, size));" & NL &
-     "      }" & NL &
-     "   }" & NL &
+     "   set_px(output, w, h, px_x, px_y, patch_min(input, w, h, px_x, px_y, size));" & NL &
      "}" & NL;
 
    dilate_procedure_text: constant String :=
@@ -119,11 +115,7 @@ package body GpuImageProc is
      "{" & NL &
      "   const int px_x = get_global_id(0);" & NL &
      "   const int px_y = get_global_id(1);" & NL &
-     "   for (int y = 0 ; y < h ; ++y) {" & NL &
-     "      for (int x = 0; x < w ; ++x) {" & NL &
-     "         set_px(output, w, h, px_x, px_y, patch_max(input, w, h, px_x, px_y, size));" & NL &
-     "      }" & NL &
-     "   }" & NL &
+     "   set_px(output, w, h, px_x, px_y, patch_max(input, w, h, px_x, px_y, size));" & NL &
      "}" & NL;
 
    combined_processing_kernel_source: constant String :=

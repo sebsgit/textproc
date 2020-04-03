@@ -113,9 +113,21 @@ package body ShapeDatabase is
                                                                                                       c_min   => 35,
                                                                                                       events_to_wait => (1 => gauss_proc_event.Get_Handle),
                                                                                                       cl_code => cl_code);
+                  erode_event: constant cl_objects.Event := gpu_processor.Erode(ctx            => gpu_context.all,
+                                                                                source         => gpuSource,
+                                                                                target         => gpuTarget,
+                                                                                size           => 7,
+                                                                                events_to_wait => (1 => proc_event.Get_Handle),
+                                                                                cl_code        => cl_code);
+                  dilate_event: constant cl_objects.Event := gpu_processor.Dilate(ctx            => gpu_context.all,
+                                                                                  source         => gpuTarget,
+                                                                                  target         => gpuSource,
+                                                                                  size           => 7,
+                                                                                  events_to_wait => (1 => erode_event.Get_Handle),
+                                                                                  cl_code        => cl_code);
                begin
                   declare
-                     downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, (1 => proc_event.Get_Handle), cl_code);
+                     downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, (1 => dilate_event.Get_Handle), cl_code);
                   begin
                      cl_code := downl_ev.Wait;
                      if cl_code = opencl.SUCCESS then
@@ -132,10 +144,10 @@ package body ShapeDatabase is
             result.assign(ImageThresholds.bernsenAdaptative(result,
                           radius => 10,
                           c_min  => 35));
+            -- apply morphology to strenghten shapes
+            result.assign(Morphology.erode(result, 7));
+            result.assign(Morphology.dilate(result, 7));
          end if;
-         -- apply morphology to strenghten shapes
-         result.assign(Morphology.erode(result, 7));
-         result.assign(Morphology.dilate(result, 7));
       end return;
    end preprocess;
 
