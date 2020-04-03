@@ -23,6 +23,21 @@ package body PixelArray.Gpu is
       return img.data.Get_Address;
    end Get_Address;
 
+   function Create(ctx: in out Context'Class; flags: opencl.Mem_Flags; width, height: in Positive; status: out opencl.Status) return GpuImage is
+      final_flags: opencl.Mem_Flags := flags;
+   begin
+      final_flags(opencl.COPY_HOST_PTR) := False;
+      final_flags(opencl.ALLOC_HOST_PTR) := True;
+      return res: constant GpuImage := (data => ctx.Create_Buffer(flags         => final_flags,
+                                                                  size          => width * height,
+                                                                  host_ptr      => System.Null_Address,
+                                                                  result_status => status),
+                                        width => width,
+                                        height => height) do
+         null;
+      end return;
+   end Create;
+
    function Upload(ctx: in out Context'Class; flags: opencl.Mem_Flags; image: in ImagePlane; status: out opencl.Status) return GpuImage is
       final_flags: opencl.Mem_Flags := flags;
    begin
@@ -52,7 +67,7 @@ package body PixelArray.Gpu is
       return queue.Enqueue_Read(mem_ob             => source.data,
                                 offset             => 0,
                                 size               => source.width * source.height,
-                                ptr                => Pixel_Buffer_Conv.To_Address(Pixel_Buffer_Conv.Object_Pointer(target.data)),
+                                ptr                => target.data(0)'Address,
                                 events_to_wait_for => event_to_wait,
                                 code               => status);
    end Download;

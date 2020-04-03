@@ -93,9 +93,10 @@ package body ShapeDatabase is
                                                                            flags  => (others => False),
                                                                            image  => image,
                                                                            status => cl_code);
-               gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
+               gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Create(ctx    => gpu_context.all,
                                                                            flags  => (others => False),
-                                                                           image  => result,
+                                                                           width => image.width,
+                                                                           height => image.height,
                                                                            status => cl_code);
                gauss_proc_event: constant cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
                                                                                             source  => gpuSource,
