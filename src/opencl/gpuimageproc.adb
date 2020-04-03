@@ -133,6 +133,26 @@ package body GpuImageProc is
                                          radius: in Positive;
                                          c_min: in PixelArray.Pixel;
                                          cl_code: out opencl.Status) return cl_objects.Event is
+      ev_data: opencl.Events(1 .. 0);
+   begin
+      return Bernsen_Adaptative_Threshold(proc           => proc,
+                                          ctx            => ctx,
+                                          source         => source,
+                                          target         => target,
+                                          radius         => radius,
+                                          c_min          => c_min,
+                                          events_to_wait => ev_data,
+                                          cl_code        => cl_code);
+   end Bernsen_Adaptative_Threshold;
+
+   function Bernsen_Adaptative_Threshold(proc: in out Processor;
+                                         ctx: in out cl_objects.Context;
+                                         source: in out PixelArray.Gpu.GpuImage;
+                                         target: in out PixelArray.Gpu.GpuImage;
+                                         radius: in Positive;
+                                         c_min: in PixelArray.Pixel;
+                                         events_to_wait: in opencl.Events;
+                                         cl_code: out opencl.Status) return cl_objects.Event is
       width_arg: aliased cl_int := cl_int(source.Get_Width);
       height_arg: aliased cl_int := cl_int(source.Get_Height);
       radius_arg: aliased cl_int := cl_int(radius);
@@ -147,6 +167,7 @@ package body GpuImageProc is
       return proc.queue.Enqueue_Kernel(kern    => proc.bernsen_threshold_kernel.all,
                                        glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
                                        loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       events_to_wait_for => events_to_wait,
                                        code    => cl_code);
    end Bernsen_Adaptative_Threshold;
 

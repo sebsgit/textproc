@@ -97,25 +97,24 @@ package body ShapeDatabase is
                                                                            flags  => (others => False),
                                                                            image  => result,
                                                                            status => cl_code);
-               gauss_proc_event: cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
-                                                                                   source  => gpuSource,
-                                                                                   target  => gpuTarget,
-                                                                                   size    => 7,
-                                                                                   sigma   => 2.4,
-                                                                                   cl_code => cl_code);
+               gauss_proc_event: constant cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
+                                                                                            source  => gpuSource,
+                                                                                            target  => gpuTarget,
+                                                                                            size    => 7,
+                                                                                            sigma   => 2.4,
+                                                                                            cl_code => cl_code);
             begin
-               cl_code := gauss_proc_event.Wait;
                declare
-                  proc_event: cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
-                                                                                             source  => gpuTarget,
-                                                                                             target  => gpuSource,
-                                                                                             radius  => 10,
-                                                                                             c_min   => 35,
-                                                                                             cl_code => cl_code);
+                  proc_event: constant cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
+                                                                                                      source  => gpuTarget,
+                                                                                                      target  => gpuSource,
+                                                                                                      radius  => 10,
+                                                                                                      c_min   => 35,
+                                                                                                      events_to_wait => (1 => gauss_proc_event.Get_Handle),
+                                                                                                      cl_code => cl_code);
                begin
-                  cl_code := proc_event.Wait;
                   declare
-                     downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, cl_code);
+                     downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, (1 => proc_event.Get_Handle), cl_code);
                   begin
                      cl_code := downl_ev.Wait;
                      if cl_code = opencl.SUCCESS then

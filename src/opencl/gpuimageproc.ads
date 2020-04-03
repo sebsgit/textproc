@@ -16,13 +16,21 @@ package GpuImageProc is
    function Create_Processor(context: in out cl_objects.Context; status: out opencl.Status) return Processor;
    function Get_Command_Queue(proc: in out Processor) return cl_objects.Command_Queue_Access;
 
-   --TODO accept events to wait for
    function Bernsen_Adaptative_Threshold(proc: in out Processor;
                                          ctx: in out cl_objects.Context;
                                          source: in out PixelArray.Gpu.GpuImage;
                                          target: in out PixelArray.Gpu.GpuImage;
                                          radius: in Positive;
                                          c_min: in PixelArray.Pixel;
+                                         cl_code: out opencl.Status) return cl_objects.Event
+     with Pre => source.Get_Width = target.Get_Width and source.Get_Height = target.Get_Height;
+   function Bernsen_Adaptative_Threshold(proc: in out Processor;
+                                         ctx: in out cl_objects.Context;
+                                         source: in out PixelArray.Gpu.GpuImage;
+                                         target: in out PixelArray.Gpu.GpuImage;
+                                         radius: in Positive;
+                                         c_min: in PixelArray.Pixel;
+                                         events_to_wait: in opencl.Events;
                                          cl_code: out opencl.Status) return cl_objects.Event
      with Pre => source.Get_Width = target.Get_Width and source.Get_Height = target.Get_Height;
 

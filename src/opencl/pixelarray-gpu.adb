@@ -41,11 +41,19 @@ package body PixelArray.Gpu is
    function Download(queue: in out Command_Queue'Class; source: in out GpuImage; target: in out ImagePlane; status: out opencl.Status) return Event is
       ev_data: opencl.Events(1 .. 0);
    begin
+      return Download(queue         => queue,
+                      source        => source,
+                      target        => target,
+                      event_to_wait => ev_data,
+                      status        => status);
+   end Download;
+   function Download(queue: in out Command_Queue'Class; source: in out GpuImage; target: in out ImagePlane; event_to_wait: in opencl.Events; status: out opencl.Status) return Event is
+   begin
       return queue.Enqueue_Read(mem_ob             => source.data,
                                 offset             => 0,
                                 size               => source.width * source.height,
                                 ptr                => Pixel_Buffer_Conv.To_Address(Pixel_Buffer_Conv.Object_Pointer(target.data)),
-                                events_to_wait_for => ev_data,
+                                events_to_wait_for => event_to_wait,
                                 code               => status);
    end Download;
 
