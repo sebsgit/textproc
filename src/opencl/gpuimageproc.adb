@@ -39,6 +39,38 @@ package body GpuImageProc is
      "   min_max[0] = tmp[0]; min_max[1] = tmp[1];" & NL &
      "}" & NL;
 
+   patch_min_procedure_text: constant String :=
+     "uchar patch_min(__global const uchar *image, int w, int h, int x, int y, int size)" & NL &
+     "{" & NL &
+     "   uchar result = get_px(image, w, h, x, y);" & NL &
+     "   for (int yp = y - size / 2; yp <= y + size / 2 ; ++yp) {" & NL &
+     "      if (yp < 0 || yp >= h) continue;" & NL &
+     "      for (int xp = x - size / 2 ; xp <= x + size / 2; ++xp) {" & NL &
+     "         if (xp < 0 || xp >= w) continue;" & NL &
+     "         const uchar curr = get_px(image, w, h, xp, yp);" & NL &
+     "         if (curr == 0) return 0;" & NL &
+     "         if (curr < result) result = curr;" & NL &
+     "      }" & NL &
+     "   }" & NL &
+     "   return result;" & NL &
+     "}" & NL;
+
+   patch_max_procedure_text: constant String :=
+     "uchar patch_max(__global const uchar *image, int w, int h, int x, int y, int size)" & NL &
+     "{" & NL &
+     "   uchar result = get_px(image, w, h, x, y);" & NL &
+     "   for (int yp = y - size / 2; yp <= y + size / 2 ; ++yp) {" & NL &
+     "      if (yp < 0 || yp >= h) continue;" & NL &
+     "      for (int xp = x - size / 2 ; xp <= x + size / 2; ++xp) {" & NL &
+     "         if (xp < 0 || xp >= w) continue;" & NL &
+     "         const uchar curr = get_px(image, w, h, xp, yp);" & NL &
+     "         if (curr == 255) return 255;" & NL &
+     "         if (curr > result) result = curr;" & NL &
+     "      }" & NL &
+     "   }" & NL &
+     "   return result;" & NL &
+     "}" & NL;
+
    bernsen_threshold_procedure_text: constant String :=
      "__kernel void bernsen_adaptative_threshold(__global const uchar *input, __global uchar *output, int w, int h, int radius, uchar c_min)" & NL &
      "{" & NL &
@@ -72,6 +104,8 @@ package body GpuImageProc is
 
    combined_processing_kernel_source: constant String :=
      px_sample_proc_text & NL &
+     patch_min_procedure_text & NL &
+     patch_max_procedure_text & NL &
      circle_min_max_procedure_text & NL &
      gaussian_filter_procedure_text & NL &
      bernsen_threshold_procedure_text;
