@@ -102,13 +102,39 @@ package body GpuImageProc is
      "   set_px(output, w, h, px_x, px_y, (px_sum > 255.0 ? 255 : (uchar)(px_sum)));" & NL &
      "}" & NL;
 
+   erode_procedure_text: constant String :=
+     "__kernel void erode(__global const uchar *input, __global uchar *output, int w, int h, int size)" & NL &
+     "{" & NL &
+     "   const int px_x = get_global_id(0);" & NL &
+     "   const int px_y = get_global_id(1);" & NL &
+     "   for (int y = 0 ; y < h ; ++y) {" & NL &
+     "      for (int x = 0; x < w ; ++x) {" & NL &
+     "         set_px(output, w, h, px_x, px_y, patch_min(input, w, h, px_x, px_y, size));" & NL &
+     "      }" & NL &
+     "   }" & NL &
+     "}" & NL;
+
+   dilate_procedure_text: constant String :=
+     "__kernel void dilate(__global const uchar *input, __global uchar *output, int w, int h, int size)" & NL &
+     "{" & NL &
+     "   const int px_x = get_global_id(0);" & NL &
+     "   const int px_y = get_global_id(1);" & NL &
+     "   for (int y = 0 ; y < h ; ++y) {" & NL &
+     "      for (int x = 0; x < w ; ++x) {" & NL &
+     "         set_px(output, w, h, px_x, px_y, patch_max(input, w, h, px_x, px_y, size));" & NL &
+     "      }" & NL &
+     "   }" & NL &
+     "}" & NL;
+
    combined_processing_kernel_source: constant String :=
      px_sample_proc_text & NL &
      patch_min_procedure_text & NL &
      patch_max_procedure_text & NL &
      circle_min_max_procedure_text & NL &
      gaussian_filter_procedure_text & NL &
-     bernsen_threshold_procedure_text;
+     bernsen_threshold_procedure_text & NL &
+     erode_procedure_text & NL &
+     dilate_procedure_text & NL;
 
    procedure Finalize(This: in out Processor) is
       procedure Free_Queue is new Ada.Unchecked_Deallocation(Object => cl_objects.Command_Queue,
@@ -126,6 +152,12 @@ package body GpuImageProc is
       end if;
       if This.gaussian_blur_kernel /= null then
          Free_Kernel(This.gaussian_blur_kernel);
+      end if;
+      if This.erode_kernel /= null then
+         Free_Kernel(This.erode_kernel);
+      end if;
+      if This.dilate_kernel /= null then
+         Free_Kernel(This.dilate_kernel);
       end if;
       if This.program /= null then
          Free_Program(This.program);
@@ -146,9 +178,21 @@ package body GpuImageProc is
                   Ada.Text_IO.Put_Line(context.Get_Build_Log(proc.program.all));
                else
                   proc.bernsen_threshold_kernel := new cl_objects.Kernel'(proc.program.all.Create_Kernel("bernsen_adaptative_threshold", status));
-                  if status = opencl.SUCCESS then
-                     proc.gaussian_blur_kernel := new cl_objects.Kernel'(proc.program.all.Create_Kernel("gaussian_filter", status));
+                  if status /= opencl.SUCCESS then
+                     return;
                   end if;
+
+                  proc.gaussian_blur_kernel := new cl_objects.Kernel'(proc.program.all.Create_Kernel("gaussian_filter", status));
+                  if status /= opencl.SUCCESS then
+                     return;
+                  end if;
+
+                  proc.erode_kernel := new cl_objects.Kernel'(proc.program.Create_Kernel("erode", status));
+                  if status /= opencl.SUCCESS then
+                     return;
+                  end if;
+
+                  proc.dilate_kernel := new cl_objects.Kernel'(proc.program.Create_Kernel("dilate", status));
                end if;
             end if;
          end if;
@@ -237,6 +281,52 @@ package body GpuImageProc is
                                        loc_ws  => (1 => 1, 2 => 1),--TODO
                                        code    => cl_code);
    end Gaussian_Filter;
+
+   function Erode(proc: in out Processor;
+                  ctx: in out cl_objects.Context;
+                  source: in out PixelArray.Gpu.GpuImage;
+                  target: in out PixelArray.Gpu.GpuImage;
+                  size: in Positive;
+                  events_to_wait: in opencl.Events;
+                  cl_code: out opencl.Status) return cl_objects.Event is
+      width_arg: aliased cl_int := cl_int(source.Get_Width);
+      height_arg: aliased cl_int := cl_int(source.Get_Height);
+      size_arg: aliased cl_int := cl_int(size);
+   begin
+      cl_code := proc.erode_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, source.Get_Address);
+      cl_code := proc.erode_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, target.Get_Address);
+      cl_code := proc.erode_kernel.Set_Arg(2, 4, width_arg'Address);
+      cl_code := proc.erode_kernel.Set_Arg(3, 4, height_arg'Address);
+      cl_code := proc.erode_kernel.Set_Arg(4, 4, size_arg'Address);
+      return proc.queue.Enqueue_Kernel(kern    => proc.erode_kernel.all,
+                                       glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
+                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       events_to_wait_for => events_to_wait,
+                                       code    => cl_code);
+   end Erode;
+
+   function Dilate(proc: in out Processor;
+                   ctx: in out cl_objects.Context;
+                   source: in out PixelArray.Gpu.GpuImage;
+                   target: in out PixelArray.Gpu.GpuImage;
+                   size: in Positive;
+                   events_to_wait: in opencl.Events;
+                   cl_code: out opencl.Status) return cl_objects.Event is
+      width_arg: aliased cl_int := cl_int(source.Get_Width);
+      height_arg: aliased cl_int := cl_int(source.Get_Height);
+      size_arg: aliased cl_int := cl_int(size);
+   begin
+      cl_code := proc.dilate_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, source.Get_Address);
+      cl_code := proc.dilate_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, target.Get_Address);
+      cl_code := proc.dilate_kernel.Set_Arg(2, 4, width_arg'Address);
+      cl_code := proc.dilate_kernel.Set_Arg(3, 4, height_arg'Address);
+      cl_code := proc.dilate_kernel.Set_Arg(4, 4, size_arg'Address);
+      return proc.queue.Enqueue_Kernel(kern    => proc.dilate_kernel.all,
+                                       glob_ws => (1 => source.Get_Width, 2 => source.Get_Height),
+                                       loc_ws  => (1 => 1, 2 => 1),--TODO
+                                       events_to_wait_for => events_to_wait,
+                                       code    => cl_code);
+   end Dilate;
 
    procedure Circle_Min_Max(proc: in out Processor; ctx: in out cl_objects.Context; image: in out PixelArray.Gpu.GpuImage; x, y: Natural; radius: Positive; min, max: out PixelArray.Pixel) is
       cl_code: opencl.Status;
