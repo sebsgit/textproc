@@ -1,4 +1,4 @@
-with opencl;
+with opencl; use opencl;
 with cl_objects; use cl_objects;
 with NeuralNet; use NeuralNet;
 
@@ -237,7 +237,8 @@ package body GpuInference is
       curr_layer_size: Positive := 1;
       next_layer_size: Positive := 1;
       curr_output_size: Positive := 1;
-      null_ev: opencl.Events(1 .. 0);
+      previous_ev: opencl.Events := (1 => 0);
+      final_event: opencl.Event_ID := 0;
    begin
       for i in 1 .. context.nn_shape.Length - 1 loop
          curr_layer_size := context.nn_shape(Positive(i));
@@ -250,19 +251,36 @@ package body GpuInference is
                                                                      weight_offset  => curr_weight_off,
                                                                      layer_size     => curr_layer_size,
                                                                      output_size    => curr_output_size,
-                                                                     events_to_wait => null_ev,
+                                                                     events_to_wait => (if i=1 then events_to_wait else previous_ev),
                                                                      cl_code        => cl_code);
-            reduce_ev: cl_objects.Event := Reduce_Activate(context        => context,
-                                                           input          => context.temp_buffer.Get_Address,
-                                                           output         => (if i=context.nn_shape.Length - 1 then output.Get_Address else context.temp_input_buffer.Get_Address),
-                                                           bias_offset    => curr_bias_off,
-                                                           layer_size     => curr_layer_size,
-                                                           output_size    => next_layer_size,
-                                                           act            => act,
-                                                           events_to_wait => (1 => mult_w_ev.Get_Handle),
-                                                           cl_code        => cl_code);
+            reduce_ev: constant cl_objects.Event := Reduce_Activate(context        => context,
+                                                                    input          => context.temp_buffer.Get_Address,
+                                                                    output         => (if i=context.nn_shape.Length - 1 then output.Get_Address else context.temp_input_buffer.Get_Address),
+                                                                    bias_offset    => curr_bias_off,
+                                                                    layer_size     => curr_layer_size,
+                                                                    output_size    => next_layer_size,
+                                                                    act            => act,
+                                                                    events_to_wait => (1 => mult_w_ev.Get_Handle),
+                                                                    cl_code        => cl_code);
          begin
-            cl_code := reduce_ev.Wait;
+            if cl_code /= opencl.SUCCESS then
+               return cl_objects.Create_Empty;
+            end if;
+
+            final_event := reduce_ev.Get_Handle;
+            if i > 1 then
+               cl_code := opencl.Release_Event(previous_ev(1));
+            end if;
+            if i /= context.nn_shape.Length - 1 then
+               cl_code := opencl.Retain_Event(final_event);
+            else
+               return cl_objects.Create_Event(final_event);
+            end if;
+
+            if cl_code /= opencl.SUCCESS then
+               return cl_objects.Create_Empty;
+            end if;
+            previous_ev(1) := final_event;
          end;
          curr_bias_off := curr_bias_off + next_layer_size;
          curr_weight_off := curr_weight_off + curr_output_size;

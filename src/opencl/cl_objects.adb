@@ -189,6 +189,17 @@ package body cl_objects is
       end return;
    end Create_Empty;
 
+   function Create_Event(id: in Event_ID) return Event is
+      cl_code: opencl.Status;
+   begin
+      return ev: Event do
+         ev.handle := id;
+         if id /= 0 then
+            cl_code := opencl.Retain_Event(id);
+         end if;
+      end return;
+   end Create_Event;
+
    function Finish(queue: in out Command_Queue) return Status is
    begin
       return opencl.Finish(queue.handle);

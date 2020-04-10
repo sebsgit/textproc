@@ -248,7 +248,8 @@ package body GpuInferenceTests is
                                                         cl_code        => cl_code);
       begin
          Assert(cl_code = opencl.SUCCESS, "forward values");
-         -- cl_code := forward_ev.Wait;
+         cl_code := forward_ev.Wait;
+         Assert(cl_code = opencl.SUCCESS, "wait for forward");
          declare
             downl_ev: cl_objects.Event := gpu_queue.Enqueue_Read(mem_ob             => output_buff,
                                                                  offset             => 0,

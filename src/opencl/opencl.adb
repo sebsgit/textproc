@@ -27,6 +27,20 @@ package body opencl is
    package C_Char_Buff_Conv is new System.Address_To_Access_Conversions(Object => C_Char_Buffer);
    package C_SizeT_Arr_Conv is new System.Address_To_Access_Conversions(Object => C_SizeT_Array);
 
+   function Convert(code: in Interfaces.C.int) return Status is
+   begin
+      return Status'Enum_Val(code);
+   exception
+      when E: Constraint_Error =>
+         Ada.Text_IO.Put_Line("Status code not recognized: " & code'Image);
+         raise;
+   end Convert;
+
+   function Convert(code: in cl_int) return Status is
+   begin
+      return Convert(Interfaces.C.int(code));
+   end Convert;
+
    cl_lib_handle: dl_loader.Handle;
 
    function To_Ada(s: in C_Char_Buffer; size: Interfaces.C.size_t) return String is
@@ -87,7 +101,7 @@ package body opencl is
       cl_code := Impl(platforms_ptr'Length,
                       C_Addr_Arr_Conv.To_Address(platforms_ptr'Unchecked_Access),
                       num_platforms'Access);
-      result_status := Status'Enum_Val(cl_code);
+      result_status := Convert(cl_code);
       if result_status = SUCCESS then
          return result: Platforms(1 .. Integer(num_platforms)) do
             for ptr of result loop
@@ -122,7 +136,7 @@ package body opencl is
                       string_ret'Length,
                       C_Char_Buff_Conv.To_Address(string_ret'Unchecked_Access),
                       size_ret'Access);
-      result_status := Status'Enum_Val(cl_code);
+      result_status := Convert(cl_code);
 
       return To_Ada(string_ret, size_ret - 1);
    end Get_Platform_Info;
@@ -145,7 +159,7 @@ package body opencl is
                      num_entries => device_ids'Length,
                      out_devices => C_Addr_Arr_Conv.To_Address(device_ids'Unchecked_Access),
                      num_devs    => num_devices'Access);
-      result_status := Status'Enum_Val(cl_res);
+      result_status := Convert(cl_res);
       if result_status = SUCCESS then
          return devs: Devices(1 .. Integer(num_devices)) do
             for idx in 1 .. num_devices loop
@@ -171,7 +185,7 @@ package body opencl is
                         res_size => Interfaces.C.unsigned'Size,
                         out_info  => flag_value'Access,
                         info_len  => System.Null_Address);
-      result_status := Status'Enum_Val(cl_status);
+      result_status := Convert(cl_status);
       return (if flag_value = 0 then False else True);
    end Get_Device_Info;
 
@@ -191,7 +205,7 @@ package body opencl is
                         res_size => buffer'Length,
                         out_info  => C_Char_Buff_Conv.To_Address(buffer'Unchecked_Access),
                         info_len  => actual_length'Access);
-      result_status := Status'Enum_Val(cl_status);
+      result_status := Convert(cl_status);
       if result_status = SUCCESS then
          return To_Ada(buffer, actual_length - 1);
       end if;
@@ -220,7 +234,7 @@ package body opencl is
                      cb        => System.Null_Address,
                      user_data => System.Null_Address,
                      err_code  => err_code'Access);
-      result_status := Status'Enum_Val(err_code);
+      result_status := Convert(err_code);
       return Context_ID(ctx_id);
    end Create_Context;
 
@@ -232,7 +246,7 @@ package body opencl is
       cl_code: Interfaces.C.int := 0;
    begin
       cl_code := Impl(Raw_Address(id));
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Release_Context;
 
    function Create_Program(ctx: in Context_ID; source: in String; result_status: out Status) return Program_ID is
@@ -253,7 +267,7 @@ package body opencl is
                       strs     => source_ptr'Access,
                       lengths  => C_SizeT_Arr_Conv.To_Address(lengths'Unchecked_Access),
                       err_code => err_code'Access);
-      result_status := Status'Enum_Val(err_code);
+      result_status := Convert(err_code);
       Interfaces.C.Strings.Free(Item => source_ptr);
       return Program_ID(prog_id);
    end Create_Program;
@@ -280,7 +294,7 @@ package body opencl is
                       options     => opts'Unchecked_Access,
                       user_cb     => System.Null_Address,
                       user_data   => System.Null_Address);
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Build_Program;
 
    function Get_Program_Build_Log(id: in Program_ID; device: in Device_ID; result_status: out Status) return String is
@@ -309,7 +323,7 @@ package body opencl is
                          available_size => build_log_size,
                          ptr            => Char_Arr_Addr_Conv.To_Address(build_log_buffer'Unchecked_Access),
                          ret_size       => build_log_size'Access);
-         result_status := Status'Enum_Val(cl_code);
+         result_status := Convert(cl_code);
          return Interfaces.C.To_Ada(Interfaces.C.char_array(build_log_buffer));
       end;
    end Get_Program_Build_Log;
@@ -322,7 +336,7 @@ package body opencl is
       cl_code: Interfaces.C.int := 0;
    begin
       cl_code := Impl(Raw_Address(id));
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Release_Program;
 
    function Create_Kernel(program: in Program_ID; name: in String; result_status: out Status) return Kernel_ID is
@@ -338,7 +352,7 @@ package body opencl is
       result := Impl(prog     => Raw_Address(program),
                      name_str => str_ptr'Unchecked_Access,
                      err_c    => cl_code'Access);
-      result_status := Status'Enum_Val(cl_code);
+      result_status := Convert(cl_code);
       return Kernel_ID(result);
    end Create_Kernel;
 
@@ -350,7 +364,7 @@ package body opencl is
       cl_code: Interfaces.C.int := 0;
    begin
       cl_code := Impl(Raw_Address(id));
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Release_Kernel;
 
    function Set_Kernel_Arg(id: in Kernel_ID; index: Natural; size: Positive; address: System.Address) return Status is
@@ -366,7 +380,7 @@ package body opencl is
                       arg_index => arg_index,
                       arg_size  => arg_size,
                       arg_addr  => address);
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Set_Kernel_Arg;
 
    function Enqueue_Kernel(queue: in Command_Queue;
@@ -412,7 +426,7 @@ package body opencl is
                      event_wait => (if event_wait_list'Length = 0 then System.Null_Address else C_Addr_Arr_Conv.To_Address(event_wait_array'Unchecked_Access)),
                      event_res  => event_result'Access);
       event := Event_ID(event_result);
-      return Status'Enum_Val(result);
+      return Convert(result);
    end Enqueue_Kernel;
 
    function Create_Command_Queue(ctx: in Context_ID; dev: in Device_ID; result_status: out Status) return Command_Queue is
@@ -427,7 +441,7 @@ package body opencl is
                      dev_id => Raw_Address(dev),
                      props  => System.Null_Address,
                      err_c  => cl_code'Access);
-      result_status := Status'Enum_Val(cl_code);
+      result_status := Convert(cl_code);
       return Command_Queue(result);
    end Create_Command_Queue;
 
@@ -439,7 +453,7 @@ package body opencl is
       cl_code: Interfaces.C.int := 0;
    begin
       cl_code := Impl(Raw_Address(id));
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Release_Command_Queue;
 
    function Wait_For_Events(ev_list: Events) return Status is
@@ -455,19 +469,30 @@ package body opencl is
       end loop;
       cl_code := Impl(num_events => ev_list'Length,
                       event_arr  => event_arr'Access);
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Wait_For_Events;
 
    function Release_Event(ev: in Event_ID) return Status is
-      function Impl(p: Raw_Address) return Interfaces.C.int
+      function Impl(p: Raw_Address) return cl_int
         with Import,
         Address => clReleaseEvent,
         Convention => C;
-      cl_code: Interfaces.C.int := 0;
+      cl_code: cl_int := 0;
    begin
       cl_code := Impl(Raw_Address(ev));
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Release_Event;
+
+   function Retain_Event(ev: in Event_ID) return Status is
+      function Impl(p: Raw_Address) return cl_int
+        with Import,
+        Address => clRetainEvent,
+        Convention => C;
+      cl_code: cl_int := 0;
+   begin
+      cl_code := Impl(Raw_Address(ev));
+      return Convert(cl_code);
+   end Retain_Event;
 
    function Finish(queue: in Command_Queue) return Status is
       function Impl(p: Raw_Address) return Interfaces.C.int
@@ -477,7 +502,7 @@ package body opencl is
       cl_code: Interfaces.C.int := 0;
    begin
       cl_code := Impl(Raw_Address(queue));
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Finish;
 
    function Convert(flags: in Mem_Flags) return cl_mem_flags is
@@ -507,7 +532,7 @@ package body opencl is
                          size        => size_p,
                          host_ptr    => host_ptr,
                          result_code => cl_code'Access);
-      result_status := Status'Enum_Val(cl_code);
+      result_status := Convert(cl_code);
       return Mem_ID(raw_mem_id);
    end Create_Buffer;
 
@@ -537,7 +562,7 @@ package body opencl is
                       event_wait      => (if events_to_wait_for'Length = 0 then System.Null_Address else C_Addr_Arr_Conv.To_Address(event_list'Unchecked_Access)),
                       event_res       => event_result'Access);
       event := Event_ID(event_result);
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Enqueue_Read;
 
    function Enqueue_Write(queue: in Command_Queue; mem_ob: in Mem_ID; block_write: Boolean; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; event: out Event_ID) return Status is
@@ -566,7 +591,7 @@ package body opencl is
                       event_wait      => (if events_to_wait_for'Length = 0 then System.Null_Address else C_Addr_Arr_Conv.To_Address(event_list'Unchecked_Access)),
                       event_res       => event_result'Access);
       event := Event_ID(event_result);
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Enqueue_Write;
 
    function Release(mem_ob: in Mem_ID) return Status is
@@ -577,7 +602,7 @@ package body opencl is
       cl_code: Interfaces.C.int;
    begin
       cl_code := Impl(Raw_Address(mem_ob));
-      return Status'Enum_Val(cl_code);
+      return Convert(cl_code);
    end Release;
 
 end opencl;

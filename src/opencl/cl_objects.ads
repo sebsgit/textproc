@@ -55,6 +55,7 @@ package cl_objects is
    function Finish(queue: in out Command_Queue) return Status;
 
    function Create_Empty return Event;
+   function Create_Event(id: in opencl.Event_ID) return Event;
 
 private
    type Context is limited new Ada.Finalization.Limited_Controlled with record

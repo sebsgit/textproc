@@ -152,6 +152,8 @@ package opencl is
 
    function Wait_For_Events(ev_list: Events) return Status
      with Pre => ev_list'Length > 0;
+   function Retain_Event(ev: in Event_ID) return Status
+     with Pre => ev /= 0;
    function Release_Event(ev: Event_ID) return Status
      with Pre => ev /= 0;
 
