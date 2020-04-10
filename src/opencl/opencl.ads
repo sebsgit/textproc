@@ -12,6 +12,7 @@ package opencl is
    type cl_int is new Interfaces.C.int;
    type cl_uint is new Interfaces.C.unsigned;
    type cl_uchar is new Interfaces.C.unsigned_char;
+   type cl_float is new Interfaces.C.C_float;
    type cl_bool is new cl_uint;
    type cl_ulong is mod 2 ** 64;
    type cl_mem_flags is new cl_ulong;

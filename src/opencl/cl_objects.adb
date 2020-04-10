@@ -2,6 +2,27 @@ with Ada.Text_IO;
 with System.Address_To_Access_Conversions;
 
 package body cl_objects is
+   procedure Find_Gpu_Device(platf: out Platform_ID; dev: out Device_ID) is
+      cl_code: opencl.Status;
+      platform_ids: constant opencl.Platforms := opencl.Get_Platforms(cl_code);
+   begin
+      if cl_code = opencl.SUCCESS then
+         for p_id of platform_ids loop
+            declare
+               device_ids: constant opencl.Devices := opencl.Get_Devices(id            => p_id,
+                                                                         dev_type      => opencl.DEVICE_TYPE_GPU,
+                                                                         result_status => cl_code);
+            begin
+               if cl_code = opencl.SUCCESS and device_ids'Length > 0 then
+                  platf := p_id;
+                  dev := device_ids(1);
+                  exit;
+               end if;
+            end;
+         end loop;
+      end if;
+   end Find_Gpu_Device;
+
    function Create(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context is
    begin
       return ctx: Context do
@@ -11,6 +32,14 @@ package body cl_objects is
                                              result_status    => result_status);
       end return;
    end Create;
+
+   function Create_Gpu(result_status: out Status) return Context is
+      platf_id: Platform_ID := 0;
+      dev_id: Device_ID := 0;
+   begin
+      Find_Gpu_Device(platf_id, dev_id);
+      return Create(platf_id, dev_id, result_status);
+   end Create_Gpu;
 
    function Create_Program(ctx: in out Context'Class; source: in String; result_status: out Status) return Program is
    begin

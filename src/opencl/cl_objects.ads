@@ -20,9 +20,11 @@ package cl_objects is
    type Command_Queue_Access is access all Command_Queue;
    type Program_Access is access all Program;
    type Kernel_Access is access all Kernel;
+   type Buffer_Access is access all Buffer;
 
    function Create(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context
      with Pre => context_platform /= 0 and context_device /= 0;
+   function Create_Gpu(result_status: out Status) return Context;
    function Create_Program(ctx: in out Context'Class; source: in String; result_status: out Status) return Program
      with Pre => source'Length > 0;
    function Create_Command_Queue(ctx: in out Context'Class; dev: in Device_ID; result_status: out Status) return Command_Queue

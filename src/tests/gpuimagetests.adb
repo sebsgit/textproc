@@ -28,27 +28,6 @@ package body GpuImageTests is
       return Format("GPU Image Tests");
    end Name;
 
-   procedure Find_Gpu_Device(platf: out Platform_ID; dev: out Device_ID) is
-      cl_code: opencl.Status;
-      platform_ids: constant opencl.Platforms := opencl.Get_Platforms(cl_code);
-   begin
-      if cl_code = opencl.SUCCESS then
-         for p_id of platform_ids loop
-            declare
-               device_ids: constant opencl.Devices := opencl.Get_Devices(id            => p_id,
-                                                                         dev_type      => opencl.DEVICE_TYPE_GPU,
-                                                                         result_status => cl_code);
-            begin
-               if cl_code = opencl.SUCCESS and device_ids'Length > 0 then
-                  platf := p_id;
-                  dev := device_ids(1);
-                  exit;
-               end if;
-            end;
-         end loop;
-      end if;
-   end Find_Gpu_Device;
-
    procedure initOpenCL(T: in out Test_Cases.Test_Case'Class) is
       cl_status: opencl.Status;
    begin
@@ -60,17 +39,12 @@ package body GpuImageTests is
       input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
       target: PixelArray.ImagePlane := PixelArray.allocate(width  => input.width,
                                                            height => input.height);
-      platf_id: opencl.Platform_ID := 0;
-      dev_id: opencl.Device_ID := 0;
    begin
       Assert(not input.isEqual(target), "input = target");
-      Find_Gpu_Device(platf_id, dev_id);
-      Assert(platf_id /= 0, "no platform");
-      Assert(dev_id /= 0, "no device");
       declare
          cl_code: opencl.Status;
-         context: cl_objects.Context := cl_objects.Create(platf_id, dev_id, cl_code);
-         queue: cl_objects.Command_Queue := context.Create_Command_Queue(dev_id, cl_code);
+         context: cl_objects.Context := cl_objects.Create_Gpu(cl_code);
+         queue: cl_objects.Command_Queue := context.Create_Command_Queue(cl_code);
          gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => context,
                                                                      flags  => (others => False),
                                                                      image  => input,
@@ -91,18 +65,11 @@ package body GpuImageTests is
    end testGpuImage;
 
    procedure testGpuProcessing(T : in out Test_Cases.Test_Case'Class) is
-      platf_id: opencl.Platform_ID := 0;
-      dev_id: opencl.Device_ID := 0;
       cl_code: opencl.Status;
       input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
    begin
-      Find_Gpu_Device(platf_id, dev_id);
-      Assert(platf_id /= 0, "no platform");
-      Assert(dev_id /= 0, "no device");
       declare
-         context: cl_objects.Context := cl_objects.Create(context_platform => platf_id,
-                                                          context_device   => dev_id,
-                                                          result_status    => cl_code);
+         context: cl_objects.Context := cl_objects.Create_Gpu(result_status    => cl_code);
          gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => context,
                                                                      flags  => (others => False),
                                                                      image  => input,
@@ -140,8 +107,6 @@ package body GpuImageTests is
    end testGpuProcessing;
 
    procedure testGpuBernsenThreshold(T : in out Test_Cases.Test_Case'Class) is
-      platf_id: opencl.Platform_ID := 0;
-      dev_id: opencl.Device_ID := 0;
       cl_code: opencl.Status;
       input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
       target: PixelArray.ImagePlane := PixelArray.allocate(width  => input.width,
@@ -150,13 +115,8 @@ package body GpuImageTests is
                                                                                       radius => 10,
                                                                                       c_min  => 35);
    begin
-      Find_Gpu_Device(platf_id, dev_id);
-      Assert(platf_id /= 0, "no platform");
-      Assert(dev_id /= 0, "no device");
       declare
-         context: cl_objects.Context := cl_objects.Create(context_platform => platf_id,
-                                                          context_device   => dev_id,
-                                                          result_status    => cl_code);
+         context: cl_objects.Context := cl_objects.Create_Gpu(result_status    => cl_code);
          gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => context,
                                                                      flags  => (others => False),
                                                                      image  => input,
@@ -193,8 +153,6 @@ package body GpuImageTests is
    end testGpuBernsenThreshold;
 
    procedure testGpuGaussianFilter(T : in out Test_Cases.Test_Case'Class) is
-      platf_id: opencl.Platform_ID := 0;
-      dev_id: opencl.Device_ID := 0;
       cl_code: opencl.Status;
       input: constant PixelArray.ImagePlane := ImageIO.load("../training_set/20180501.jpg");
       target: PixelArray.ImagePlane := PixelArray.allocate(width  => input.width,
@@ -203,13 +161,8 @@ package body GpuImageTests is
                                                                           size  => 7,
                                                                           sigma => 2.4);
    begin
-      Find_Gpu_Device(platf_id, dev_id);
-      Assert(platf_id /= 0, "no platform");
-      Assert(dev_id /= 0, "no device");
       declare
-         context: cl_objects.Context := cl_objects.Create(context_platform => platf_id,
-                                                          context_device   => dev_id,
-                                                          result_status    => cl_code);
+         context: cl_objects.Context := cl_objects.Create_Gpu(result_status    => cl_code);
          gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => context,
                                                                      flags  => (others => False),
                                                                      image  => input,
