@@ -214,10 +214,10 @@ package body GpuInferenceTests is
       net.layers(1)(1).bias := 0.5;
       net.layers(1)(1).w := (1 => 0.3);
 
-      net.layers(1)(2).bias := 0.0;
+      net.layers(1)(2).bias := 0.2;
       net.layers(1)(2).w := (1 => 0.17);
 
-      net.layers(2)(1).bias := 0.0;
+      net.layers(2)(1).bias := 0.7;
       net.layers(2)(1).w := (0.4, 0.9);
 
       cpu_input.Append(input_value);
@@ -259,8 +259,7 @@ package body GpuInferenceTests is
          begin
             cl_code := downl_ev.Wait;
             Assert(cl_code = opencl.SUCCESS, "download result");
-            Ada.Text_IO.Put_Line("result gpu: " & host_result(1)'Image);
-            Ada.Text_IO.Put_Line("result cpu: " & cpu_result'Image);
+            Assert(abs(Float(host_result(1)) - cpu_result) < 0.001, "Gpu nn forward fail");
          end;
       end;
    end testGpuForward;

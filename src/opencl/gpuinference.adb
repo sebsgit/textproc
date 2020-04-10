@@ -264,7 +264,7 @@ package body GpuInference is
          begin
             cl_code := reduce_ev.Wait;
          end;
-         curr_bias_off := curr_bias_off + curr_layer_size;
+         curr_bias_off := curr_bias_off + next_layer_size;
          curr_weight_off := curr_weight_off + curr_output_size;
       end loop;
       return cl_objects.Create_Empty;
