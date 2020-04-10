@@ -18,6 +18,7 @@ package body GpuInferenceTests is
       Register_Routine (T, testGpuWeightUpload'Access, "Gpu NN weights test");
       Register_Routine (T, testGpuWeightApply'Access, "Gpu NN weights apply test");
       Register_Routine (T, testGpuForward'Access, "Gpu NN forward");
+      Register_Routine (T, testGpuForwardLargeNN'Access, "Gpu NN forward (big nn)");
    end Register_Tests;
 
    function Name(T: TestCase) return Test_String is
@@ -264,4 +265,79 @@ package body GpuInferenceTests is
          end;
       end;
    end testGpuForward;
+
+   procedure testGpuForwardLargeNN(T : in out Test_Cases.Test_Case'Class) is
+      config: NeuralNet.Config(2);
+      net: NeuralNet.Net(config.size);
+      cl_code: opencl.Status;
+      gpu_context: aliased cl_objects.Context := cl_objects.Create_Gpu(result_status => cl_code);
+      gpu_queue: cl_objects.Command_Queue := gpu_context.Create_Command_Queue(result_status => cl_code);
+      cpu_results: MathUtils.Vector;
+      cpu_input: MathUtils.Vector;
+   begin
+      Assert(cl_code = opencl.SUCCESS, "Create context: " & cl_code'Image);
+
+      config.inputSize := 32 * 37;
+      config.act := NeuralNet.RELU;
+      config.sizes := (150, 25);
+
+      net := NeuralNet.create(config);
+
+      for i in 1 .. config.inputSize loop
+         cpu_input.Append(Float(i) / Float(config.inputSize));
+      end loop;
+      cpu_results := net.forward(cpu_input);
+      declare
+         null_events: opencl.Events(1 .. 0);
+
+         type HostBuff is array (Positive range<>) of opencl.cl_float;
+         host_input: aliased HostBuff(1 .. Positive(cpu_input.Length)) := (others => 0.0);
+         host_result: aliased HostBuff(1 .. Positive(cpu_results.Length)) := (others => 0.0);
+
+      begin
+         for i in 1 .. cpu_input.Length loop
+            declare
+               value: constant Float := cpu_input(Positive(i));
+            begin
+               host_input(Integer(i)) := opencl.cl_float(value);
+            end;
+         end loop;
+         declare
+            input_buff: cl_objects.Buffer := gpu_context.Create_Buffer(flags         => (opencl.COPY_HOST_PTR => True, others => False),
+                                                                       size          => 4 * Integer(cpu_input.Length),
+                                                                       host_ptr      => host_input'Address,
+                                                                       result_status => cl_code);
+            output_buff: cl_objects.Buffer := gpu_context.Create_Buffer(flags         => (opencl.ALLOC_HOST_PTR => True, others => False),
+                                                                        size          => 4 * Integer(cpu_results.Length),
+                                                                        host_ptr      => System.Null_Address,
+                                                                        result_status => cl_code);
+            gpu_nn: constant GpuInference.NNData := GpuInference.Create(ctx     => gpu_context'Unchecked_Access,
+                                                                        nn      => net,
+                                                                        cl_code => cl_code);
+            forward_ev: cl_objects.Event := gpu_nn.Forward(input          => input_buff,
+                                                           output         => output_buff,
+                                                           act            => net.conf.act,
+                                                           events_to_wait => null_events,
+                                                           cl_code        => cl_code);
+         begin
+            Assert(cl_code = opencl.SUCCESS, "forward values");
+            cl_code := forward_ev.Wait;
+            Assert(cl_code = opencl.SUCCESS, "wait for forward");
+            declare
+               downl_ev: cl_objects.Event := gpu_queue.Enqueue_Read(mem_ob             => output_buff,
+                                                                    offset             => 0,
+                                                                    size               => 4 * Integer(cpu_results.Length),
+                                                                    ptr                => host_result'Address,
+                                                                    events_to_wait_for => null_events,
+                                                                    code               => cl_code);
+            begin
+               cl_code := downl_ev.Wait;
+               Assert(cl_code = opencl.SUCCESS, "download result");
+               for i in 1 .. cpu_results.Length loop
+                  Assert(abs(Float(host_result(Integer(i))) - cpu_results(Positive(i))) < 0.001, "Gpu nn forward fail");
+               end loop;
+            end;
+         end;
+      end;
+   end testGpuForwardLargeNN;
 end GpuInferenceTests;

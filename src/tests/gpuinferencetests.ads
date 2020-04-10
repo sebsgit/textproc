@@ -12,5 +12,6 @@ package GpuInferenceTests is
    procedure testGpuWeightUpload(T: in out Test_Cases.Test_Case'Class);
    procedure testGpuWeightApply(T: in out Test_Cases.Test_Case'Class);
    procedure testGpuForward(T: in out Test_Cases.Test_Case'Class);
+   procedure testGpuForwardLargeNN(T: in out Test_Cases.Test_Case'Class);
 
 end GpuInferenceTests;
