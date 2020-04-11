@@ -197,8 +197,8 @@ package body GpuInference is
       cl_code := context.multiply_weights_kernel.Set_Arg(3, 4, weight_offset_arg'Address);
       cl_code := context.multiply_weights_kernel.Set_Arg(4, 4, layer_size_arg'Address);
       return context.processing_queue.Enqueue_Kernel(kern               => context.multiply_weights_kernel.all,
-                                                     glob_ws            => (1 => output_size, 2 => 1),
-                                                     loc_ws             => (1 => 1, 2 => 1), --TODO
+                                                     glob_ws            => (1 => output_size),
+                                                     loc_ws             => (1 => 1), --TODO
                                                      events_to_wait_for => events_to_wait,
                                                      code               => cl_code);
    end Multiply_Weights;
@@ -220,8 +220,8 @@ package body GpuInference is
       cl_code := context.reduce_sum_kernel.Set_Arg(4, 4, layer_size_arg'Address);
       cl_code := context.reduce_sum_kernel.Set_Arg(5, 4, activator_arg'Address);
       return context.processing_queue.Enqueue_Kernel(kern               => context.reduce_sum_kernel.all,
-                                                     glob_ws            => (1 => output_size, 2 => 1),
-                                                     loc_ws             => (1 => 1, 2 => 1),
+                                                     glob_ws            => (1 => output_size),
+                                                     loc_ws             => (1 => 1),
                                                      events_to_wait_for => events_to_wait,
                                                      code               => cl_code);
    end Reduce_Activate;
