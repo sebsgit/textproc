@@ -169,6 +169,18 @@ package body GpuInference is
       end return;
    end flatten_biases;
 
+   function Get_Local_Group_Size(global_size: in Positive) return Positive is
+      type Sizes is array (Positive range <>) of Positive;
+      preferred_sizes: constant Sizes := (64, 32, 16, 8, 4, 2, 1);
+   begin
+      for size of preferred_sizes loop
+         if global_size mod size = 0 then
+            return size;
+         end if;
+      end loop;
+      return 1;
+   end Get_Local_Group_Size;
+
    function Upload_Weights(ctx: in out cl_objects.Context; nn: in NeuralNet.Net; cl_code: out opencl.Status) return cl_objects.Buffer is
       host_buffer: aliased FlattenedWeights := flatten_weights(nn);
    begin
@@ -198,7 +210,7 @@ package body GpuInference is
       cl_code := context.multiply_weights_kernel.Set_Arg(4, 4, layer_size_arg'Address);
       return context.processing_queue.Enqueue_Kernel(kern               => context.multiply_weights_kernel.all,
                                                      glob_ws            => (1 => output_size),
-                                                     loc_ws             => (1 => 1), --TODO
+                                                     loc_ws             => (1 => Get_Local_Group_Size(output_size)),
                                                      events_to_wait_for => events_to_wait,
                                                      code               => cl_code);
    end Multiply_Weights;
@@ -221,7 +233,7 @@ package body GpuInference is
       cl_code := context.reduce_sum_kernel.Set_Arg(5, 4, activator_arg'Address);
       return context.processing_queue.Enqueue_Kernel(kern               => context.reduce_sum_kernel.all,
                                                      glob_ws            => (1 => output_size),
-                                                     loc_ws             => (1 => 1),
+                                                     loc_ws             => (1 => Get_Local_Group_Size(output_size)),
                                                      events_to_wait_for => events_to_wait,
                                                      code               => cl_code);
    end Reduce_Activate;

@@ -38,7 +38,7 @@ package body MainTestSuite is
    begin
       Add_Test(suiteObject'Access, openclTestCase'Access);
       Add_Test(suiteObject'Access, gpuImageTestCase'Access);
-      Add_Test(suiteObject'Access, gpuInferenceTestCase'Access);return suiteObject'Access;
+      Add_Test(suiteObject'Access, gpuInferenceTestCase'Access);
       Add_Test(suiteObject'Access, csvTestCase'Access);
       Add_Test(suiteObject'Access, imageTestCase'Access);
       Add_Test(suiteObject'Access, shapeTestCase'Access);

@@ -8,6 +8,7 @@ with cl_objects;
 with GpuInference;
 with NeuralNet;
 with MathUtils;
+with Timer;
 
 package body GpuInferenceTests is
 
@@ -272,6 +273,7 @@ package body GpuInferenceTests is
       gpu_queue: cl_objects.Command_Queue := gpu_context.Create_Command_Queue(result_status => cl_code);
       cpu_results: MathUtils.Vector;
       cpu_input: MathUtils.Vector;
+      tmr: Timer.T;
    begin
       Assert(cl_code = opencl.SUCCESS, "Create context: " & cl_code'Image);
 
@@ -284,7 +286,9 @@ package body GpuInferenceTests is
       for i in 1 .. config.inputSize loop
          cpu_input.Append(Float(i) / Float(config.inputSize));
       end loop;
+      tmr := Timer.start;
       cpu_results := net.forward(cpu_input);
+      tmr.report;
       declare
          null_events: opencl.Events(1 .. 0);
 
@@ -300,6 +304,7 @@ package body GpuInferenceTests is
                host_input(Integer(i)) := opencl.cl_float(value);
             end;
          end loop;
+         tmr.reset;
          declare
             input_buff: cl_objects.Buffer := gpu_context.Create_Buffer(flags         => (opencl.COPY_HOST_PTR => True, others => False),
                                                                        size          => 4 * Integer(cpu_input.Length),
@@ -319,6 +324,7 @@ package body GpuInferenceTests is
          begin
             Assert(cl_code = opencl.SUCCESS, "forward values");
             cl_code := forward_ev.Wait;
+            tmr.report;
             Assert(cl_code = opencl.SUCCESS, "wait for forward");
             declare
                downl_ev: cl_objects.Event := gpu_queue.Enqueue_Read(mem_ob             => output_buff,
