@@ -16,10 +16,10 @@ package GpuInference is
    function Upload_Weights(ctx: in out cl_objects.Context; nn: in NeuralNet.Net; cl_code: out opencl.Status) return cl_objects.Buffer;
    function Upload_Biases(ctx: in out cl_objects.Context; nn: in NeuralNet.Net; cl_code: out opencl.Status) return cl_objects.Buffer;
    function Multiply_Weights(context: NNData; input, output: in out cl_objects.Buffer; weight_offset: in Natural; layer_size, output_size: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
-   function Reduce_Activate(context: NNData; input, output: in out cl_objects.Buffer; bias_offset: in Natural; layer_size, output_size: in Positive; act: in NeuralNet.Activator; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
+   function Reduce_Activate(context: NNData; input, output: in out cl_objects.Buffer; bias_offset: in Natural; layer_size, output_size: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
    function Multiply_Weights(context: NNData; input, output: in System.Address; weight_offset: in Natural; layer_size, output_size: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
-   function Reduce_Activate(context: NNData; input, output: in System.Address; bias_offset: in Natural; layer_size, output_size: in Positive; act: in NeuralNet.Activator; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
-   function Forward(context: NNData; input, output: in out cl_objects.Buffer; act: in NeuralNet.Activator; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
+   function Reduce_Activate(context: NNData; input, output: in System.Address; bias_offset: in Natural; layer_size, output_size: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
+   function Forward(context: NNData; input, output: in out cl_objects.Buffer; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
 
 private
    package Int_Vec is new Ada.Containers.Vectors(Index_Type   => Positive,
@@ -36,6 +36,7 @@ private
       temp_buffer: cl_objects.Buffer_Access;
       temp_input_buffer: cl_objects.Buffer_Access;
       nn_shape: Int_Vec.Vector;
+      nn_activator: NeuralNet.Activator;
    end record;
    overriding procedure Finalize(This: in out NNData);
 end GpuInference;

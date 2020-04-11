@@ -69,6 +69,7 @@ package body GpuInference is
       return res: NNData do
          res.ctx := ctx;
 
+         res.nn_activator := nn.conf.act;
          res.nn_shape.Append(nn.conf.inputSize);
          for i in 1 .. nn.conf.sizes'Length loop
             res.nn_shape.Append(nn.conf.sizes(i));
@@ -207,9 +208,9 @@ package body GpuInference is
       return Multiply_Weights(context, input.Get_Address, output.Get_Address, weight_offset, layer_size, output_size, events_to_wait, cl_code);
    end Multiply_Weights;
 
-   function Reduce_Activate(context: NNData; input, output: in System.Address; bias_offset: in Natural; layer_size, output_size: in Positive; act: in NeuralNet.Activator; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
+   function Reduce_Activate(context: NNData; input, output: in System.Address; bias_offset: in Natural; layer_size, output_size: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
       layer_size_arg: aliased opencl.cl_int := opencl.cl_int(layer_size);
-      activator_arg: aliased opencl.cl_int := opencl.cl_int(if act = NeuralNet.RELU then 0 else 1);
+      activator_arg: aliased opencl.cl_int := opencl.cl_int(if context.nn_activator = NeuralNet.RELU then 0 else 1);
       bias_offset_arg: aliased opencl.cl_int := opencl.cl_int(bias_offset);
    begin
       cl_code := context.reduce_sum_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, input);
@@ -225,13 +226,13 @@ package body GpuInference is
                                                      code               => cl_code);
    end Reduce_Activate;
 
-   function Reduce_Activate(context: NNData; input, output: in out cl_objects.Buffer; bias_offset: in Natural; layer_size, output_size: in Positive; act: in NeuralNet.Activator; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
+   function Reduce_Activate(context: NNData; input, output: in out cl_objects.Buffer; bias_offset: in Natural; layer_size, output_size: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
    begin
-      return Reduce_Activate(context, input.Get_Address, output.Get_Address, bias_offset, layer_size, output_size, act, events_to_wait, cl_code);
+      return Reduce_Activate(context, input.Get_Address, output.Get_Address, bias_offset, layer_size, output_size, events_to_wait, cl_code);
    end Reduce_Activate;
 
 
-   function Forward(context: NNData; input, output: in out cl_objects.Buffer; act: in NeuralNet.Activator; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
+   function Forward(context: NNData; input, output: in out cl_objects.Buffer; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
       curr_weight_off: Natural := 0;
       curr_bias_off: Natural := 0;
       curr_layer_size: Positive := 1;
@@ -259,7 +260,6 @@ package body GpuInference is
                                                                     bias_offset    => curr_bias_off,
                                                                     layer_size     => curr_layer_size,
                                                                     output_size    => next_layer_size,
-                                                                    act            => act,
                                                                     events_to_wait => (1 => mult_w_ev.Get_Handle),
                                                                     cl_code        => cl_code);
          begin

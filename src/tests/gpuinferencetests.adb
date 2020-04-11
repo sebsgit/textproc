@@ -166,7 +166,6 @@ package body GpuInferenceTests is
                                                                               bias_offset    => 0,
                                                                               layer_size     => 2,
                                                                               output_size    => 2,
-                                                                              act            => NeuralNet.RELU,
                                                                               events_to_wait => empty_ev,
                                                                               cl_code        => cl_code);
                downl_2_ev: cl_objects.Event := gpu_queue.Enqueue_Read(mem_ob             => input_buff,
@@ -244,7 +243,6 @@ package body GpuInferenceTests is
                                                                      cl_code => cl_code);
          forward_ev: cl_objects.Event := gpu_nn.Forward(input          => input_buff,
                                                         output         => output_buff,
-                                                        act            => net.conf.act,
                                                         events_to_wait => null_events,
                                                         cl_code        => cl_code);
       begin
@@ -316,7 +314,6 @@ package body GpuInferenceTests is
                                                                         cl_code => cl_code);
             forward_ev: cl_objects.Event := gpu_nn.Forward(input          => input_buff,
                                                            output         => output_buff,
-                                                           act            => net.conf.act,
                                                            events_to_wait => null_events,
                                                            cl_code        => cl_code);
          begin
