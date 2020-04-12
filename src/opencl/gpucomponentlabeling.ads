@@ -13,6 +13,7 @@ package GpuComponentLabeling is
                             Type_Invariant => Check);
 
    type Processor is tagged limited private;
+   type Processor_Access is access all Processor;
 
    type Pixel_CCL_Data is record
       label: opencl.cl_uint;

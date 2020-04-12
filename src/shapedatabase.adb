@@ -19,11 +19,13 @@ with GpuImageProc; use GpuImageProc;
 with cl_objects;
 with opencl; use opencl;
 with PixelArray.Gpu;
+with GpuComponentLabeling; use GpuComponentLabeling;
 
 package body ShapeDatabase is
 
    gpu_context: cl_objects.Context_Access;
    gpu_processor: GpuImageProc.Processor_Access;
+   gpu_detector: GpuComponentLabeling.Processor_Access;
 
    procedure Find_Gpu_Device(platf: out Platform_ID; dev: out Device_ID) is
       cl_code: opencl.Status;
@@ -77,7 +79,21 @@ package body ShapeDatabase is
          Ada.Text_IO.Put_Line("Cannot init GPU processor: " & cl_status'Image);
          return;
       end if;
+
+      gpu_detector := new GpuComponentLabeling.Processor'(GpuComponentLabeling.Create(ctx     => gpu_context,
+                                                                                      width   => 256,
+                                                                                      height  => 256,
+                                                                                      cl_code => cl_status));
+      if cl_status /= opencl.SUCCESS then
+         Ada.Text_IO.Put_Line("Cannot init GPU detector: " & cl_status'Image);
+         return;
+      end if;
    end Init_Gpu;
+
+   function Detect_Image_Regions(image: in out PixelArray.ImagePlane) return ImageRegions.RegionVector.Vector is
+   begin
+      return ImageRegions.detectRegions(image);
+   end Detect_Image_Regions;
 
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane is
       fallback_to_cpu: Boolean := True;
@@ -162,7 +178,7 @@ package body ShapeDatabase is
    begin
       result.c := cc;
       -- detect regions
-      regions := ImageRegions.detectRegions(image);
+      regions := Detect_Image_Regions(image);
 
       result.d := processRegion(image, regions.First_Element);
 
@@ -230,7 +246,7 @@ package body ShapeDatabase is
       r: ImageRegions.RegionVector.Vector;
       basePath: constant Ada.Strings.Unbounded.Unbounded_String := getCharacterString(imagePath);
    begin
-      r := ImageRegions.detectRegions(image);
+      r := Detect_Image_Regions(image);
       if Integer(r.Length) /= Ada.Strings.Unbounded.Length(basePath) then
          raise Capacity_Error with imagePath & " --> " & Ada.Strings.Unbounded.To_String(basePath) & ": processing error";
       end if;
