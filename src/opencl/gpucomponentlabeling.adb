@@ -3,6 +3,7 @@ with opencl; use opencl;
 
 with Ada.Unchecked_Deallocation;
 with Ada.Characters.Latin_1;
+with Ada.Containers.Vectors;
 with Ada.Numerics.Generic_Elementary_Functions;
 with System;
 with Ada.Text_IO;
@@ -249,5 +250,66 @@ package body GpuComponentLabeling is
                                          events_to_wait_for => events_to_wait,
                                          code               => cl_code);
    end Get_CCL_Data;
+
+   package Region_Data_Vec is new Ada.Containers.Vectors(Index_Type   => Natural,
+                                                         Element_Type => opencl.cl_uint);
+
+   function Find_Unique_Labels(host_ccl_buffer: in GpuComponentLabeling.CCL_Data) return Region_Data_Vec.Vector is
+      current_idx: opencl.cl_uint := 0;
+      unique_root_labels: Region_Data_Vec.Vector;
+   begin
+      for lbl of host_ccl_buffer loop
+         current_idx := current_idx + 1;
+         if lbl.label > 0 and then lbl.label = current_idx then
+            unique_root_labels.Append(lbl.label);
+         end if;
+      end loop;
+      return unique_root_labels;
+   end Find_Unique_Labels;
+
+   function Detect_Regions(proc: in out Processor; preprocessed_cpu_image: in PixelArray.ImagePlane; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector is
+      result: ImageRegions.RegionVector.Vector;
+      host_ccl_data: aliased CCL_Data(1 .. preprocessed_cpu_image.width * preprocessed_cpu_image.height);
+      gpu_image: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => proc.context.all,
+                                                                  flags  => (opencl.COPY_HOST_PTR => True, others => False),
+                                                                  image  => preprocessed_cpu_image,
+                                                                  status => cl_code);
+      ccl_ev: constant cl_objects.Event := proc.Run_CCL(gpu_image      => gpu_image,
+                                                        events_to_wait => opencl.no_events,
+                                                        cl_code        => cl_code);
+      down_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff      => host_ccl_data'Address,
+                                                     events_to_wait => (1 => ccl_ev.Get_Handle),
+                                                     cl_code        => cl_code);
+   begin
+      cl_code := down_ev.Wait;
+      if cl_code = opencl.SUCCESS then
+         declare
+            use ImageRegions;
+
+            new_rg: ImageRegions.Region;
+            label: ImageRegions.RegionLabel := 1;
+            unique_labels: constant Region_Data_Vec.Vector := Find_Unique_Labels(host_ccl_data);
+            gpu_rg: Pixel_CCL_Data;
+         begin
+            for lbl of unique_labels loop
+               gpu_rg := host_ccl_data(Natural(lbl));
+               new_rg.label := label;
+               new_rg.area.x := Natural(gpu_rg.min_x);
+               new_rg.area.y := Natural(gpu_rg.min_y);
+               new_rg.area.width := Natural(gpu_rg.max_x - gpu_rg.min_x);
+               new_rg.area.height := Natural(gpu_rg.max_y - gpu_rg.min_y);
+
+               --TODO not really
+               new_rg.pixelCount := new_rg.area.width * new_rg.area.height;
+               new_rg.center.x := Float(new_rg.area.x + new_rg.area.width / 2);
+               new_rg.center.y := Float(new_rg.area.y + new_rg.area.height / 2);
+
+               result.Append(new_rg);
+               label := label + 1;
+            end loop;
+         end;
+      end if;
+      return result;
+   end Detect_Regions;
 
 end GpuComponentLabeling;

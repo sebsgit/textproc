@@ -37,6 +37,7 @@ package body GpuComponentLabelingTests is
       Register_Routine (T, initOpenCL'Access, "init opencl");
       Register_Routine (T, testCreateContext'Access, "create context");
       Register_Routine (T, testDetection'Access, "GPU region labeling");
+      Register_Routine (T, testFullPipeline'Access, "upload -> labeling -> conversion pipeline");
       Register_Routine (T, cleanup'Access, "cleanup");
    end Register_Tests;
 
@@ -54,10 +55,6 @@ package body GpuComponentLabelingTests is
       Assert(cl_code = opencl.SUCCESS, "create gpu context failed: " & cl_code'Image);
 
       test_image.assign(ShapeDatabase.preprocess(image => test_image));
-      test_image.assign(test_image.cut(x => 0,
-                                       y => 0,
-                                       w => test_image.width - 1,
-                                       h => test_image.height));
       test_image_gpu := new PixelArray.Gpu.GpuImage'(PixelArray.Gpu.Upload(ctx    => gpu_context.all,
                                                                            flags  => (opencl.COPY_HOST_PTR => True, others => False),
                                                                            image  => test_image,
@@ -69,64 +66,15 @@ package body GpuComponentLabelingTests is
                                                          Element_Type => opencl.cl_uint);
 
    function Find_Unique_Labels(host_ccl_buffer: in GpuComponentLabeling.CCL_Data) return Region_Data_Vec.Vector is
-      current_label: opencl.cl_uint := 0;
-      root_x: opencl.cl_ushort := 0;
-      root_y: opencl.cl_ushort := 0;
-      label_found: Boolean := False;
+      current_idx: opencl.cl_uint := 0;
       unique_root_labels: Region_Data_Vec.Vector;
-      label_counts: Region_Data_Vec.Vector;
-      package bboxvec is new Ada.Containers.Vectors(Index_Type   => Natural,
-                                                    Element_Type => ImageRegions.Rect);
-      bbox: bboxvec.Vector;
-      current_idx: Natural := 0;
-
-      new_x, new_y : Natural;
-
-      function find_root(x, y: Natural) return opencl.cl_uint is
-         label: opencl.cl_uint;
-      begin
-         label := opencl.cl_uint(x + y * test_image.width + 1);
-         while label /= host_ccl_buffer(Natural(label)).label loop
-            label := host_ccl_buffer(Natural(label)).label;
-         end loop;
-         return label;
-      end find_root;
-
    begin
-      for y in 0 .. test_image.height - 1 loop
-         for x in 0 .. test_image.width - 1 loop
-            current_label := host_ccl_buffer(x + y * test_image.width + 1).label;
-            if current_label > 0 then
-               current_label := find_root(x, y);
-
-
-
-               label_found := False;
-               current_idx := 0;
-               for lbl of unique_root_labels loop
-                  if lbl = current_label then
-                     label_found := True;
-                     exit;
-                  end if;
-                  current_idx := current_idx + 1;
-               end loop;
-               if not label_found then
-                  unique_root_labels.Append(current_label);
-                  label_counts.Append(1);
-                  bbox.Append(ImageRegions.Rect'(x, y, 1, 1));
-               else
-                  label_counts(current_idx) := label_counts(current_idx) + 1;
-                  new_x := Natural'Min(x, bbox(current_idx).x);
-                  new_y := Natural'Min(y, bbox(current_idx).y);
-                  bbox(current_idx) := ImageRegions.Rect'(new_x,
-                                                          new_y,
-                                                          Natural'Max(abs(x - bbox(current_idx).x), bbox(current_idx).width),
-                                                          Natural'Max(abs(y - bbox(current_idx).y), bbox(current_idx).height));
-               end if;
-            end if;
-         end loop;
+      for lbl of host_ccl_buffer loop
+         current_idx := current_idx + 1;
+         if lbl.label > 0 and then lbl.label = current_idx then
+            unique_root_labels.Append(lbl.label);
+         end if;
       end loop;
-
       return unique_root_labels;
    end Find_Unique_Labels;
 
@@ -287,4 +235,26 @@ package body GpuComponentLabelingTests is
          end loop;
       end;
    end testDetection;
+
+   procedure testFullPipeline(T: in out Test_Cases.Test_Case'Class) is
+      proc: GpuComponentLabeling.Processor := GpuComponentLabeling.Create(ctx     => gpu_context.all'Unchecked_Access,
+                                                                          width   => test_image_gpu.Get_Width,
+                                                                          height  => test_image_gpu.Get_Height,
+                                                                          cl_code => cl_code);
+      cpu_input_image: PixelArray.ImagePlane := test_image.clone;
+      tmr: Timer.T := Timer.start;
+      cpu_regions: constant ImageRegions.RegionVector.Vector := ImageRegions.detectRegions(cpu_input_image);
+   begin
+      tmr.report("CPU labeling");
+      Assert(cl_code = opencl.SUCCESS, "init context failed: " & cl_code'Image);
+      tmr.reset;
+      declare
+         gpu_regions: constant ImageRegions.RegionVector.Vector := proc.Detect_Regions(preprocessed_cpu_image => test_image,
+                                                                                       cl_code                => cl_code);
+      begin
+         tmr.report("GPU detection pipeline");
+         Assert(cl_code = opencl.SUCCESS, "ccl pipeline: " & cl_code'Image);
+         Assert(cpu_regions.Length = gpu_regions.Length, "length fail");
+      end;
+   end testFullPipeline;
 end GpuComponentLabelingTests;
