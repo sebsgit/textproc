@@ -152,6 +152,7 @@ package body GpuComponentLabelingTests is
 
          declare
             dwn_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff => host_ccl_buffer'Address,
+                                                          events_to_wait => opencl.no_events,
                                                           cl_code   => cl_code);
             curr_idx: Natural := 1;
             expected_label: opencl.cl_uint := 0;
@@ -181,6 +182,7 @@ package body GpuComponentLabelingTests is
             Assert(cl_code = opencl.SUCCESS, "vpass wait: " & cl_code'Image);
             declare
                dwn_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff => host_ccl_buffer'Address,
+                                                             events_to_wait => opencl.no_events,
                                                              cl_code   => cl_code);
                prev_d, curr_d: GpuComponentLabeling.Pixel_CCL_Data;
             begin
@@ -205,10 +207,9 @@ package body GpuComponentLabelingTests is
             merge_pass_ev: cl_objects.Event := proc.Merge_Pass(opencl.no_events, cl_code);
          begin
             Assert(cl_code = opencl.SUCCESS, "merge kernel: " & cl_code'Image);
-            --cl_code := merge_pass_ev.Wait;--TODO
-            Assert(cl_code = opencl.SUCCESS, "merge wait: " & cl_code'Image);
             declare
                dwn_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff => host_ccl_buffer'Address,
+                                                             events_to_wait => opencl.no_events,
                                                              cl_code   => cl_code);
             begin
                Assert(cl_code = opencl.SUCCESS, "downl init data: " & cl_code'Image);
@@ -241,16 +242,14 @@ package body GpuComponentLabelingTests is
       Assert(cl_code = opencl.SUCCESS, "init context failed: " & cl_code'Image);
       tmr.reset;
       declare
-         ccl_ev: cl_objects.Event := proc.Run_CCL(gpu_image      => test_image_gpu.all,
-                                                  events_to_wait => opencl.no_events,
-                                                  cl_code        => cl_code);
+         ccl_ev: constant cl_objects.Event := proc.Run_CCL(gpu_image      => test_image_gpu.all,
+                                                           events_to_wait => opencl.no_events,
+                                                           cl_code        => cl_code);
       begin
          Assert(cl_code = opencl.SUCCESS, "ccl kernel: " & cl_code'Image);
-         --TODO cl_code := ccl_ev.Wait;
-         Assert(cl_code = opencl.SUCCESS, "ccl wait: " & cl_code'Image);
-
          declare
             dwn_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff => host_ccl_buffer'Address,
+                                                          events_to_wait => (1 => ccl_ev.Get_Handle),
                                                           cl_code   => cl_code);
          begin
             Assert(cl_code = opencl.SUCCESS, "downl init data: " & cl_code'Image);

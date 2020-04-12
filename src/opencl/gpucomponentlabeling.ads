@@ -5,7 +5,6 @@ with PixelArray.Gpu;
 with System;
 with Ada.Finalization;
 
---TODO optimize events
 --TODO optimize local work group sizes
 package GpuComponentLabeling is
    pragma Elaborate_Body;
@@ -38,7 +37,7 @@ package GpuComponentLabeling is
    function Get_Height(proc: in Processor) return Natural;
 
    -- exposed for testing
-   function Get_CCL_Data(proc: in out Processor; host_buff: in System.Address; cl_code: out opencl.Status) return cl_objects.Event;
+   function Get_CCL_Data(proc: in out Processor; host_buff: in System.Address; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
 
 private
    type Processor is new Ada.Finalization.Limited_Controlled with record

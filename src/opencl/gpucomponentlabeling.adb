@@ -180,24 +180,34 @@ package body GpuComponentLabeling is
 
       width_div: Positive := 2;
       idx: Float := 0.0;
+      loop_limit: constant Float := Math_Fnc.Log(Float(proc.Get_Width), 2.0);
+      previous_event: opencl.Events(1 .. 1);
+      is_first_step: Boolean := True;
    begin
-      if events_to_wait'Length > 0 then
-         cl_code := opencl.Wait_For_Events(ev_list => events_to_wait); --TODO
-      end if;
-      while idx < Math_Fnc.Log(Float(proc.Get_Width), 2.0) loop
+      previous_event(1) := 0;
+      while idx < loop_limit loop
          idx := idx + 1.0;
          declare
-            ev: cl_objects.Event := proc.Merge_Pass(width_div => width_div,
-                                                    events_to_wait => opencl.no_events,
-                                                    cl_code    => cl_code);
+            is_last_step: constant Boolean := not (idx < loop_limit);
+            ev: constant cl_objects.Event := proc.Merge_Pass(width_div => width_div,
+                                                             events_to_wait => (if is_first_step then events_to_wait else previous_event),
+                                                             cl_code    => cl_code);
          begin
             if cl_code /= opencl.SUCCESS then
                exit;
             end if;
-            cl_code := ev.Wait;
+            if previous_event(1) /= 0 then
+               cl_code := opencl.Release_Event(previous_event(1));
+            end if;
+            if is_last_step then
+               return cl_objects.Create_Event(ev.Get_Handle);
+            else
+               cl_code := opencl.Retain_Event(ev.Get_Handle);
+               previous_event(1) := ev.Get_Handle;
+            end if;
          end;
          width_div := width_div * 2;
-
+         is_first_step := False;
       end loop;
       return cl_objects.Create_Empty;
    end Merge_Pass;
@@ -219,12 +229,13 @@ package body GpuComponentLabeling is
       return cl_objects.Create_Empty;
    end Run_CCL;
 
-   function Get_CCL_Data(proc: in out Processor; host_buff: in System.Address; cl_code: out opencl.Status) return cl_objects.Event is
+   function Get_CCL_Data(proc: in out Processor; host_buff: in System.Address; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
    begin
       return proc.gpu_queue.Enqueue_Read(mem_ob             => proc.ccl_data.all,
                                          offset             => 0,
                                          size               => proc.Get_Width * proc.Get_Height * Pixel_CCL_Data'Size / 8,
                                          ptr                => host_buff,
+                                         events_to_wait_for => events_to_wait,
                                          code               => cl_code);
    end Get_CCL_Data;
 
