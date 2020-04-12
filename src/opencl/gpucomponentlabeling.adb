@@ -135,7 +135,7 @@ package body GpuComponentLabeling is
       Free(This.processing_program);
    end Finalize;
 
-   function Init_CCL_Data(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; cl_code: out opencl.Status) return cl_objects.Event is
+   function Init_CCL_Data(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
    begin
       --TODO input events
       cl_code := proc.initialization_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, gpu_image.Get_Address);
@@ -145,10 +145,11 @@ package body GpuComponentLabeling is
       return proc.gpu_queue.Enqueue_Kernel(kern               => proc.initialization_kernel.all,
                                            glob_ws            => (1 => proc.Get_Width, 2 => proc.Get_Height),
                                            loc_ws             => (1, 1), --TODO
+                                           events_to_wait_for => events_to_wait,
                                            code               => cl_code);
    end Init_CCL_Data;
 
-   function Vertical_Pass(proc: in out Processor; cl_code: out opencl.Status) return cl_objects.Event is
+   function Vertical_Pass(proc: in out Processor; events_to_wait: opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
    begin
       cl_code := proc.vertical_pass_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, proc.ccl_data.Get_Address);
       cl_code := proc.vertical_pass_kernel.Set_Arg(1, 4, proc.width'Address);
@@ -156,10 +157,11 @@ package body GpuComponentLabeling is
       return proc.gpu_queue.Enqueue_Kernel(kern               => proc.vertical_pass_kernel.all,
                                            glob_ws            => (1 => proc.Get_Width, 2 => 1),
                                            loc_ws             => (1, 1), --TODO
+                                           events_to_wait_for => events_to_wait,
                                            code               => cl_code);
    end Vertical_Pass;
 
-   function Merge_Pass(proc: in out Processor; width_div: in Positive; cl_code: out opencl.Status) return cl_objects.Event is
+   function Merge_Pass(proc: in out Processor; width_div: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
       width_div_arg: aliased opencl.cl_int := opencl.cl_int(width_div);
    begin
       cl_code := proc.merge_pass_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, proc.ccl_data.Get_Address);
@@ -169,19 +171,24 @@ package body GpuComponentLabeling is
       return proc.gpu_queue.Enqueue_Kernel(kern               => proc.merge_pass_kernel.all,
                                            glob_ws            => (1 => Natural(Float'Ceiling(Float(proc.Get_Width) / Float(width_div))), 2 => proc.Get_Height),
                                            loc_ws             => (1, 1), --TODO
+                                           events_to_wait_for => events_to_wait,
                                            code               => cl_code);
    end Merge_Pass;
 
-   function Merge_Pass(proc: in out Processor; cl_code: out opencl.Status) return cl_objects.Event is
+   function Merge_Pass(proc: in out Processor; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
       package Math_Fnc is new Ada.Numerics.Generic_Elementary_Functions(Float_Type => Float);
 
       width_div: Positive := 2;
       idx: Float := 0.0;
    begin
+      if events_to_wait'Length > 0 then
+         cl_code := opencl.Wait_For_Events(ev_list => events_to_wait); --TODO
+      end if;
       while idx < Math_Fnc.Log(Float(proc.Get_Width), 2.0) loop
          idx := idx + 1.0;
          declare
             ev: cl_objects.Event := proc.Merge_Pass(width_div => width_div,
+                                                    events_to_wait => opencl.no_events,
                                                     cl_code    => cl_code);
          begin
             if cl_code /= opencl.SUCCESS then
@@ -196,23 +203,18 @@ package body GpuComponentLabeling is
    end Merge_Pass;
 
    function Run_CCL(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
-      init_ev: cl_objects.Event := proc.Init_CCL_Data(gpu_image => gpu_image,
-                                                      cl_code   => cl_code);
+      init_ev: constant cl_objects.Event := proc.Init_CCL_Data(gpu_image => gpu_image,
+                                                               events_to_wait => events_to_wait,
+                                                               cl_code   => cl_code);
    begin
       if cl_code = opencl.SUCCESS then
-         cl_code := init_ev.Wait;
-         if cl_code = opencl.SUCCESS then
-            declare
-               vpass_ev: cl_objects.Event := proc.Vertical_Pass(cl_code);
-            begin
-               if cl_code = opencl.SUCCESS then
-                  cl_code := vpass_ev.Wait;
-                  if cl_code = opencl.SUCCESS then
-                     return proc.Merge_Pass(cl_code);
-                  end if;
-               end if;
-            end;
-         end if;
+         declare
+            vpass_ev: constant cl_objects.Event := proc.Vertical_Pass((1 => init_ev.Get_Handle), cl_code);
+         begin
+            if cl_code = opencl.SUCCESS then
+               return proc.Merge_Pass((1 => vpass_ev.Get_Handle), cl_code);
+            end if;
+         end;
       end if;
       return cl_objects.Create_Empty;
    end Run_CCL;

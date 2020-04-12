@@ -86,6 +86,8 @@ package opencl is
    type Event_ID is new Raw_Address;
    type Events is array (Positive range<>) of Event_ID;
 
+   no_events: Events(1 .. 0);
+
    type Mem_ID is new Raw_Address;
 
    type Command_Queue is new Raw_Address;

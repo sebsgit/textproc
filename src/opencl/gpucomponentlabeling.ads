@@ -25,11 +25,11 @@ package GpuComponentLabeling is
    pragma Convention(Convention => C, Entity => CCL_Data);
 
    function Create(ctx: cl_objects.Context_Access; width, height: in Positive; cl_code: out opencl.Status) return Processor;
-   function Init_CCL_Data(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; cl_code: out opencl.Status) return cl_objects.Event
+   function Init_CCL_Data(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event
      with Pre => gpu_image.Get_Width = proc.Get_Width and gpu_image.Get_Height = proc.Get_Height;
-   function Vertical_Pass(proc: in out Processor; cl_code: out opencl.Status) return cl_objects.Event;
-   function Merge_Pass(proc: in out Processor; width_div: in Positive; cl_code: out opencl.Status) return cl_objects.Event;
-   function Merge_Pass(proc: in out Processor; cl_code: out opencl.Status) return cl_objects.Event;
+   function Vertical_Pass(proc: in out Processor; events_to_wait: opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
+   function Merge_Pass(proc: in out Processor; width_div: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
+   function Merge_Pass(proc: in out Processor; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;
 
    function Run_CCL(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event
      with Pre => gpu_image.Get_Width = proc.Get_Width and gpu_image.Get_Height = proc.Get_Height;

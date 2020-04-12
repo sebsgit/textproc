@@ -143,6 +143,7 @@ package body GpuComponentLabelingTests is
       Assert(cl_code = opencl.SUCCESS, "init context failed: " & cl_code'Image);
       declare
          init_ev: cl_objects.Event := proc.Init_CCL_Data(gpu_image => test_image_gpu.all,
+                                                         events_to_wait => opencl.no_events,
                                                          cl_code   => cl_code);
       begin
          Assert(cl_code = opencl.SUCCESS, "init kernel: " & cl_code'Image);
@@ -173,7 +174,7 @@ package body GpuComponentLabelingTests is
 
          -- vertical pass
          declare
-            vpass_ev: cl_objects.Event := proc.Vertical_Pass(cl_code);
+            vpass_ev: cl_objects.Event := proc.Vertical_Pass(opencl.no_events, cl_code);
          begin
             Assert(cl_code = opencl.SUCCESS, "vpass kernel: " & cl_code'Image);
             cl_code := vpass_ev.Wait;
@@ -201,7 +202,7 @@ package body GpuComponentLabelingTests is
 
          -- full merge pass
          declare
-            merge_pass_ev: cl_objects.Event := proc.Merge_Pass(cl_code);
+            merge_pass_ev: cl_objects.Event := proc.Merge_Pass(opencl.no_events, cl_code);
          begin
             Assert(cl_code = opencl.SUCCESS, "merge kernel: " & cl_code'Image);
             --cl_code := merge_pass_ev.Wait;--TODO
@@ -233,7 +234,6 @@ package body GpuComponentLabelingTests is
       host_ccl_buffer: aliased GpuComponentLabeling.CCL_Data(1 .. proc.Get_Width * proc.Get_Height);
       unique_root_labels: Region_Data_Vec.Vector;
       cpu_input_image: PixelArray.ImagePlane := test_image.clone;
-      no_events: opencl.Events(1 .. 0);
       tmr: Timer.T := Timer.start;
       cpu_regions: constant ImageRegions.RegionVector.Vector := ImageRegions.detectRegions(cpu_input_image);
    begin
@@ -242,7 +242,7 @@ package body GpuComponentLabelingTests is
       tmr.reset;
       declare
          ccl_ev: cl_objects.Event := proc.Run_CCL(gpu_image      => test_image_gpu.all,
-                                                  events_to_wait => no_events,
+                                                  events_to_wait => opencl.no_events,
                                                   cl_code        => cl_code);
       begin
          Assert(cl_code = opencl.SUCCESS, "ccl kernel: " & cl_code'Image);
