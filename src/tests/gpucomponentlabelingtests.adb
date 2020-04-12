@@ -12,6 +12,7 @@ with Ada.Unchecked_Deallocation;
 with Ada.Containers.Vectors; use Ada.Containers;
 
 with Ada.Text_IO;
+with Timer;
 
 package body GpuComponentLabelingTests is
 
@@ -35,6 +36,7 @@ package body GpuComponentLabelingTests is
    begin
       Register_Routine (T, initOpenCL'Access, "init opencl");
       Register_Routine (T, testCreateContext'Access, "create context");
+      Register_Routine (T, testDetection'Access, "GPU region labeling");
       Register_Routine (T, cleanup'Access, "cleanup");
    end Register_Tests;
 
@@ -65,18 +67,6 @@ package body GpuComponentLabelingTests is
 
    package Region_Data_Vec is new Ada.Containers.Vectors(Index_Type   => Natural,
                                                          Element_Type => opencl.cl_uint);
-
-   procedure drawBox(image: out PixelArray.ImagePlane; box: ImageRegions.Rect; color: PixelArray.Pixel) is
-   begin
-      for px in box.x .. box.x + box.width loop
-         image.set(px, box.y, color);
-         image.set(px, box.y + box.height, color);
-      end loop;
-      for py in box.y .. box.y + box.height loop
-         image.set(box.x, py, color);
-         image.set(box.x + box.width, py, color);
-      end loop;
-   end drawBox;
 
    function Find_Unique_Labels(host_ccl_buffer: in GpuComponentLabeling.CCL_Data) return Region_Data_Vec.Vector is
       current_label: opencl.cl_uint := 0;
@@ -234,4 +224,45 @@ package body GpuComponentLabelingTests is
          -- full merge pass end
       end;
    end testCreateContext;
+
+   procedure testDetection(T: in out Test_Cases.Test_Case'Class) is
+      proc: GpuComponentLabeling.Processor := GpuComponentLabeling.Create(ctx     => gpu_context.all'Unchecked_Access,
+                                                                          width   => test_image_gpu.Get_Width,
+                                                                          height  => test_image_gpu.Get_Height,
+                                                                          cl_code => cl_code);
+      host_ccl_buffer: aliased GpuComponentLabeling.CCL_Data(1 .. proc.Get_Width * proc.Get_Height);
+      unique_root_labels: Region_Data_Vec.Vector;
+      cpu_input_image: PixelArray.ImagePlane := test_image.clone;
+      no_events: opencl.Events(1 .. 0);
+      tmr: Timer.T := Timer.start;
+      cpu_regions: constant ImageRegions.RegionVector.Vector := ImageRegions.detectRegions(cpu_input_image);
+   begin
+      tmr.report("CPU labeling");
+      Assert(cl_code = opencl.SUCCESS, "init context failed: " & cl_code'Image);
+      tmr.reset;
+      declare
+         ccl_ev: cl_objects.Event := proc.Run_CCL(gpu_image      => test_image_gpu.all,
+                                                  events_to_wait => no_events,
+                                                  cl_code        => cl_code);
+      begin
+         Assert(cl_code = opencl.SUCCESS, "ccl kernel: " & cl_code'Image);
+         --TODO cl_code := ccl_ev.Wait;
+         Assert(cl_code = opencl.SUCCESS, "ccl wait: " & cl_code'Image);
+
+         declare
+            dwn_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff => host_ccl_buffer'Address,
+                                                          cl_code   => cl_code);
+         begin
+            Assert(cl_code = opencl.SUCCESS, "downl init data: " & cl_code'Image);
+            cl_code := dwn_ev.Wait;
+            Assert(cl_code = opencl.SUCCESS, "downl wait: " & cl_code'Image);
+         end;
+
+         tmr.report("GPU labeling");
+         unique_root_labels := Find_Unique_Labels(host_ccl_buffer);
+
+         Ada.Text_IO.Put_Line("Gpu found " & unique_root_labels.Length'Image & " regions");
+         Assert(cpu_regions.Length = unique_root_labels.Length, "cpu count /= gpu count");
+      end;
+   end testDetection;
 end GpuComponentLabelingTests;

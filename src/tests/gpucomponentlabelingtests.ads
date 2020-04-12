@@ -10,6 +10,7 @@ package GpuComponentLabelingTests is
 
    procedure initOpenCL(T: in out Test_Cases.Test_Case'Class);
    procedure testCreateContext(T: in out Test_Cases.Test_Case'Class);
+   procedure testDetection(T: in out Test_Cases.Test_Case'Class);
    procedure cleanup(T: in out Test_Cases.Test_Case'Class);
 
 end GpuComponentLabelingTests;

@@ -7,6 +7,7 @@ package Timer is
    function reset(tm: in out T) return Float;
    procedure reset(tm: in out T);
    procedure report(tm: in out T);
+   procedure report(tm: in out T; message: in String);
 
 private
    type T is tagged record

@@ -195,6 +195,28 @@ package body GpuComponentLabeling is
       return cl_objects.Create_Empty;
    end Merge_Pass;
 
+   function Run_CCL(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
+      init_ev: cl_objects.Event := proc.Init_CCL_Data(gpu_image => gpu_image,
+                                                      cl_code   => cl_code);
+   begin
+      if cl_code = opencl.SUCCESS then
+         cl_code := init_ev.Wait;
+         if cl_code = opencl.SUCCESS then
+            declare
+               vpass_ev: cl_objects.Event := proc.Vertical_Pass(cl_code);
+            begin
+               if cl_code = opencl.SUCCESS then
+                  cl_code := vpass_ev.Wait;
+                  if cl_code = opencl.SUCCESS then
+                     return proc.Merge_Pass(cl_code);
+                  end if;
+               end if;
+            end;
+         end if;
+      end if;
+      return cl_objects.Create_Empty;
+   end Run_CCL;
+
    function Get_CCL_Data(proc: in out Processor; host_buff: in System.Address; cl_code: out opencl.Status) return cl_objects.Event is
    begin
       return proc.gpu_queue.Enqueue_Read(mem_ob             => proc.ccl_data.all,

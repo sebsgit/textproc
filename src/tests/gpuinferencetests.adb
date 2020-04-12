@@ -288,7 +288,7 @@ package body GpuInferenceTests is
       end loop;
       tmr := Timer.start;
       cpu_results := net.forward(cpu_input);
-      tmr.report;
+      tmr.report("NN inference CPU");
       declare
          null_events: opencl.Events(1 .. 0);
 
@@ -324,7 +324,7 @@ package body GpuInferenceTests is
          begin
             Assert(cl_code = opencl.SUCCESS, "forward values");
             cl_code := forward_ev.Wait;
-            tmr.report;
+            tmr.report("NN inference GPU");
             Assert(cl_code = opencl.SUCCESS, "wait for forward");
             declare
                downl_ev: cl_objects.Event := gpu_queue.Enqueue_Read(mem_ob             => output_buff,

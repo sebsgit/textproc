@@ -31,4 +31,11 @@ package body Timer is
       Ada.Text_IO.Put_Line("Elapsed: " & dur'Image);
    end report;
 
+   procedure report(tm: in out T; message: in String) is
+      dur: Float;
+   begin
+      dur := tm.reset;
+      Ada.Text_IO.Put_Line(message & ", elapsed: " & dur'Image);
+   end report;
+
 end Timer;
