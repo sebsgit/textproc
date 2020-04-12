@@ -37,8 +37,8 @@ package GpuComponentLabeling is
    function Get_Width(proc: in Processor) return Natural;
    function Get_Height(proc: in Processor) return Natural;
 
-   function Detect_Regions(proc: in out Processor; preprocessed_cpu_image: in PixelArray.ImagePlane; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector
-     with Pre => preprocessed_cpu_image.width = proc.Get_Width and preprocessed_cpu_image.height = proc.Get_Height;
+   function Detect_Regions(proc: in out Processor; preprocessed_cpu_image: in PixelArray.ImagePlane; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector;
+   function Detect_Regions_And_Assign_Labels(proc: in out Processor; preprocessed_cpu_image: in out PixelArray.ImagePlane; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector;
 
    -- exposed for testing
    function Get_CCL_Data(proc: in out Processor; host_buff: in System.Address; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event;

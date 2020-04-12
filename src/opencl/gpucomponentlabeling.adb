@@ -332,4 +332,79 @@ package body GpuComponentLabeling is
       return result;
    end Detect_Regions;
 
+   function Detect_Regions_And_Assign_Labels(proc: in out Processor; preprocessed_cpu_image: in out PixelArray.ImagePlane; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector is
+      result: ImageRegions.RegionVector.Vector;
+      host_ccl_data: aliased CCL_Data(1 .. preprocessed_cpu_image.width * preprocessed_cpu_image.height);
+      gpu_image: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => proc.context.all,
+                                                                  flags  => (opencl.COPY_HOST_PTR => True, others => False),
+                                                                  image  => preprocessed_cpu_image,
+                                                                  status => cl_code);
+      ccl_ev: constant cl_objects.Event := proc.Run_CCL(gpu_image      => gpu_image,
+                                                        events_to_wait => opencl.no_events,
+                                                        cl_code        => cl_code);
+      down_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff      => host_ccl_data'Address,
+                                                     events_to_wait => (1 => ccl_ev.Get_Handle),
+                                                     cl_code        => cl_code);
+   begin
+      cl_code := down_ev.Wait;
+      if cl_code = opencl.SUCCESS then
+         declare
+            use ImageRegions;
+
+            new_rg: ImageRegions.Region;
+            label: ImageRegions.RegionLabel := 1;
+            reg_lbl: Natural := 1;
+            unique_labels: constant Region_Data_Vec.Vector := Find_Unique_Labels(host_ccl_data);
+            gpu_rg: Pixel_CCL_Data;
+         begin
+            for lbl of unique_labels loop
+               gpu_rg := host_ccl_data(Natural(lbl));
+               new_rg.label := label;
+               new_rg.area.x := Natural(gpu_rg.min_x);
+               new_rg.area.y := Natural(gpu_rg.min_y);
+               new_rg.area.width := Natural(gpu_rg.max_x - gpu_rg.min_x);
+               new_rg.area.height := Natural(gpu_rg.max_y - gpu_rg.min_y);
+
+               new_rg.pixelCount := 0;
+               for rg of host_ccl_data loop
+                  if rg.label = lbl then
+                     new_rg.pixelCount := new_rg.pixelCount + 1;
+                  end if;
+               end loop;
+
+               new_rg.center.x := Float(new_rg.area.x + new_rg.area.width / 2);
+               new_rg.center.y := Float(new_rg.area.y + new_rg.area.height / 2);
+
+               if new_rg.pixelCount > 10 then
+                  result.Append(new_rg);
+                  label := label + 1;
+               end if;
+            end loop;
+
+            reg_lbl := 0;
+            for rg of host_ccl_data loop
+               reg_lbl := reg_lbl + 1;
+               if rg.label /= 0 then
+                  label := 1;
+                  for d of unique_labels loop
+                     if Natural(d) = Natural(rg.label) then
+                        exit;
+                     end if;
+                     label := label + 1;
+                  end loop;
+
+                  declare
+                     px_x, px_y: Natural := 0;
+                  begin
+                     px_x := Natural(reg_lbl - 1) mod preprocessed_cpu_image.width;
+                     px_y := Natural(reg_lbl - 1) / preprocessed_cpu_image.width;
+                     preprocessed_cpu_image.set(px_x, px_y, PixelArray.Pixel(label));
+                  end;
+               end if;
+            end loop;
+         end;
+      end if;
+      return result;
+   end Detect_Regions_And_Assign_Labels;
+
 end GpuComponentLabeling;

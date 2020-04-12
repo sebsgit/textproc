@@ -91,7 +91,12 @@ package body ShapeDatabase is
    end Init_Gpu;
 
    function Detect_Image_Regions(image: in out PixelArray.ImagePlane) return ImageRegions.RegionVector.Vector is
+      cl_code: opencl.Status;
    begin
+      if gpu_detector /= null then
+         return gpu_detector.Detect_Regions_And_Assign_Labels(preprocessed_cpu_image => image,
+                                                              cl_code                => cl_code);
+      end if;
       return ImageRegions.detectRegions(image);
    end Detect_Image_Regions;
 
