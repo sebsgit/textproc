@@ -79,7 +79,7 @@ package body GpuInference is
          res.processing_prog := new cl_objects.Program'(ctx.Create_Program(source        => processing_program_text,
                                                                            result_status => cl_code));
          cl_code := ctx.Build(prog    => res.processing_prog.all,
-                              options => "-w -Werror");
+                              options => "-w -Werror -cl-fast-relaxed-math -cl-strict-aliasing -cl-mad-enable");
          res.multiply_weights_kernel := new cl_objects.Kernel'(res.processing_prog.Create_Kernel("multiply_weights", cl_code));
          res.reduce_sum_kernel := new cl_objects.Kernel'(res.processing_prog.Create_Kernel("reduce_sum", cl_code));
          res.nn_weights := new cl_objects.Buffer'(Upload_Weights(ctx     => ctx.all,

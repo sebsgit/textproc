@@ -17,7 +17,7 @@ package body GpuComponentLabeling is
      "" & NL;
 
    init_kernel_source: constant String :=
-     "__kernel void init(__global uchar *image, int width, int height, __global ccl_data *output) {" & NL &
+     "__kernel void init(__global uchar * restrict image, int width, int height, __global ccl_data * restrict output) {" & NL &
      "   const int px_x = get_global_id(0);" & NL &
      "   const int px_y = get_global_id(1);" & NL &
      "   const int px_i = px_x + width * px_y;" & NL &
@@ -52,15 +52,13 @@ package body GpuComponentLabeling is
      "   const int r = get_global_id(1);" & NL &
      "   const int next_col = col_id + 1;" & NL &
      "   if (next_col < width) {" & NL &
-   -- "      for (int r = 0; r < height ; ++r) {" & NL &
-     "         ccl_data left = data[col_id + r * width];" & NL &
-     "         ccl_data right = data[next_col + r * width];" & NL &
-     "         if (left.label > 0 && right.label > 0) {" & NL &
-     "            const uint root_left = find_root(data, width, height, col_id, r);" & NL &
-     "            const uint root_right = find_root(data, width, height, next_col, r);" & NL &
-     "            data[max(root_left, root_right) - 1] = data[min(root_left, root_right) - 1];" & NL &
-     "         }" & NL &
-   -- "      }" & NL &
+     "      ccl_data left = data[col_id + r * width];" & NL &
+     "      ccl_data right = data[next_col + r * width];" & NL &
+     "      if (left.label > 0 && right.label > 0) {" & NL &
+     "         const uint root_left = find_root(data, width, height, col_id, r);" & NL &
+     "         const uint root_right = find_root(data, width, height, next_col, r);" & NL &
+     "         data[max(root_left, root_right) - 1] = data[min(root_left, root_right) - 1];" & NL &
+     "      }" & NL &
      "   }" & NL &
      "}" & NL;
 
@@ -106,7 +104,7 @@ package body GpuComponentLabeling is
          if cl_code /= opencl.SUCCESS then return; end if;
 
          cl_code := ctx.Build(prog    => res.processing_program.all,
-                              options => "-w -Werror");
+                              options => "-w -Werror -cl-fast-relaxed-math -cl-strict-aliasing -cl-mad-enable");
          if cl_code /= opencl.SUCCESS then
             if cl_code = opencl.BUILD_PROGRAM_FAILURE then
                Ada.Text_IO.Put_Line(ctx.Get_Build_Log(res.processing_program.all));
