@@ -262,6 +262,29 @@ package body GpuComponentLabelingTests is
 
          Ada.Text_IO.Put_Line("Gpu found " & unique_root_labels.Length'Image & " regions");
          Assert(cpu_regions.Length = unique_root_labels.Length, "cpu count /= gpu count");
+
+         for lbl of unique_root_labels loop
+            for rg of host_ccl_buffer loop
+               if lbl = rg.label then
+                  declare
+                     region_found: Boolean := False;
+                  begin
+                     for cpu_rg of cpu_regions loop
+                        if cpu_rg.area.x = Natural(rg.min_x) and
+                          cpu_rg.area.y = Natural(rg.min_y) and
+                          cpu_rg.area.width = Natural(rg.max_x - rg.min_x) and
+                          cpu_rg.area.height = Natural(rg.max_y - rg.min_y)
+                        then
+                           region_found := True;
+                           exit;
+                        end if;
+                     end loop;
+                     Assert(region_found, "GPU region not found");
+                  end;
+                  exit;
+               end if;
+            end loop;
+         end loop;
       end;
    end testDetection;
 end GpuComponentLabelingTests;

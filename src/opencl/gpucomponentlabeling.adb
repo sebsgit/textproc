@@ -13,8 +13,17 @@ package body GpuComponentLabeling is
    common_declarations_program_source: constant String :=
      "typedef struct {" & NL &
      "   uint label;" & NL &
+     "   int min_x, min_y;" & NL &
+     "   int max_x, max_y;" & NL &
      "} ccl_data;" & NL &
-     "" & NL;
+     "" & NL &
+     "uint find_root_by_label(__global const ccl_data *data, uint label) {" & NL &
+     "   uint root = label;" & NL &
+     "   while (root != data[root - 1].label) {" & NL &
+     "      root = data[root - 1].label;" & NL &
+     "   }" & NL &
+     "   return root;" & NL &
+     "}" & NL;
 
    init_kernel_source: constant String :=
      "__kernel void init(__global uchar * restrict image, int width, int height, __global ccl_data * restrict output) {" & NL &
@@ -22,6 +31,10 @@ package body GpuComponentLabeling is
      "   const int px_y = get_global_id(1);" & NL &
      "   const int px_i = px_x + width * px_y;" & NL &
      "   output[px_i].label = (image[px_i] == 0) ? px_i + 1 : 0;" & NL &
+     "   output[px_i].min_x = px_x;" & NL &
+     "   output[px_i].min_y = px_y;" & NL &
+     "   output[px_i].max_x = px_x;" & NL &
+     "   output[px_i].max_y = px_y;" & NL &
      "}" & NL;
 
    vpass_kernel_source: constant String :=
@@ -31,46 +44,45 @@ package body GpuComponentLabeling is
      "   for (int r = 1; r < height ; ++r) {" & NL &
      "      ccl_data curr = data[px_x + r * width];" & NL &
      "      if (prev.label > 0 && curr.label > 0) {" & NL &
+     "         const int root_idx = find_root_by_label(data, prev.label) - 1;" & NL &
+     "         atomic_min(&data[root_idx].min_x, px_x);" & NL &
+     "         atomic_min(&data[root_idx].min_y, r - 1);" & NL &
+     "         atomic_max(&data[root_idx].max_x, px_x);" & NL &
+     "         atomic_max(&data[root_idx].max_y, r);" & NL &
      "         curr.label = prev.label;" & NL &
+     "         data[px_x + r * width].label = prev.label;" & NL &
      "      }" & NL &
-     "      data[px_x + r * width] = curr;" & NL &
-     "      prev = curr;" & NL &
+     "      prev.label = curr.label;" & NL &
      "   }" & NL &
      "}" & NL;
 
    merge_pass_source: constant String :=
-     "uint find_root(__global ccl_data *data, int width, int height, int x, int y) {" & NL &
-     "   uint root = width * y + x + 1;" & NL &
-     "   while (root != data[root - 1].label) {" & NL &
-     "      root = data[root - 1].label;" & NL &
-     "   }" & NL &
-     "   return root;" & NL &
-     "}" & NL &
      "__kernel void merge_pass(__global ccl_data *data, int width, int height, int w_div) {" & NL &
      "   const int px_x = get_global_id(0);" & NL &
      "   const int col_id = w_div * px_x + w_div / 2 - 1;" & NL &
-     "   const int r = get_global_id(1);" & NL &
      "   const int next_col = col_id + 1;" & NL &
      "   if (next_col < width) {" & NL &
-     "      ccl_data left = data[col_id + r * width];" & NL &
-     "      ccl_data right = data[next_col + r * width];" & NL &
-     "      if (left.label > 0 && right.label > 0) {" & NL &
-     "         const uint root_left = find_root(data, width, height, col_id, r);" & NL &
-     "         const uint root_right = find_root(data, width, height, next_col, r);" & NL &
-     "         data[max(root_left, root_right) - 1] = data[min(root_left, root_right) - 1];" & NL &
+     "      const int px_y = get_global_id(1);" & NL &
+     "      const uint left = data[col_id + px_y * width].label;" & NL &
+     "      const uint right = data[next_col + px_y * width].label;" & NL &
+     "      if (left > 0 && right > 0) {" & NL &
+     "         const uint root_left = find_root_by_label(data, left);" & NL &
+     "         const uint root_right = find_root_by_label(data, right);" & NL &
+     "         const int root_idx = min(root_left, root_right) - 1;" & NL &
+     "         const ccl_data old_root = data[max(root_left, root_right) - 1];" & NL &
+     "         data[max(root_left, root_right) - 1].label = data[root_idx].label;" & NL &
+     "         atomic_min(&data[root_idx].min_x, min(col_id, old_root.min_x));" & NL &
+     "         atomic_min(&data[root_idx].min_y, min(px_y, old_root.min_y));" & NL &
+     "         atomic_max(&data[root_idx].max_x, max(next_col, old_root.max_x));" & NL &
+     "         atomic_max(&data[root_idx].max_y, max(px_y, old_root.max_y));" & NL &
      "      }" & NL &
      "   }" & NL &
-     "}" & NL;
-
-   label_pass_source: constant String :=
-     "__kernel void label_pass() {" & NL &
      "}" & NL;
 
    processing_program_source: constant String :=
      common_declarations_program_source & NL &
      vpass_kernel_source & NL &
      merge_pass_source & NL &
-     label_pass_source & NL &
      init_kernel_source & NL;
 
    function Get_Width(proc: in Processor) return Natural is
