@@ -102,23 +102,16 @@ package body GpuInference is
    end Create;
 
    procedure Finalize(This: in out NNData) is
-      procedure Free_Queue is new Ada.Unchecked_Deallocation(Object => cl_objects.Command_Queue,
-                                                             Name   => cl_objects.Command_Queue_Access);
-      procedure Free_Program is new Ada.Unchecked_Deallocation(Object => cl_objects.Program,
-                                                               Name   => cl_objects.Program_Access);
-      procedure Free_Kernel is new Ada.Unchecked_Deallocation(Object => cl_objects.Kernel,
-                                                              Name   => cl_objects.Kernel_Access);
-      procedure Free_Buffer is new Ada.Unchecked_Deallocation(Object => cl_objects.Buffer,
-                                                              Name   => cl_objects.Buffer_Access);
+      use cl_objects;
    begin
-      Free_Queue(This.processing_queue);
-      Free_Kernel(This.reduce_sum_kernel);
-      Free_Kernel(This.multiply_weights_kernel);
-      Free_Program(This.processing_prog);
-      Free_Buffer(This.nn_weights);
-      Free_Buffer(This.nn_biases);
-      Free_Buffer(This.temp_buffer);
-      Free_Buffer(This.temp_input_buffer);
+      Free(This.processing_queue);
+      Free(This.reduce_sum_kernel);
+      Free(This.multiply_weights_kernel);
+      Free(This.processing_prog);
+      Free(This.nn_weights);
+      Free(This.nn_biases);
+      Free(This.temp_buffer);
+      Free(This.temp_input_buffer);
    end Finalize;
 
    type FlattenedWeights is array(Positive range <>) of aliased opencl.cl_float;

@@ -6,6 +6,7 @@ with PixelArray;
 with Ada.Strings.Unbounded;
 
 package TrainingData is
+   pragma Elaborate_Body;
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);

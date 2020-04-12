@@ -1,4 +1,5 @@
 with Ada.Text_IO;
+with Ada.Unchecked_Deallocation;
 with System.Address_To_Access_Conversions;
 
 package body cl_objects is
@@ -105,6 +106,12 @@ package body cl_objects is
                                      event              => ev_handle);
          ev.handle := ev_handle;
       end return;
+   end Enqueue_Read;
+
+   function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; code: out Status) return Event is
+      no_events: opencl.Events(1 .. 0);
+   begin
+      return Enqueue_Read(queue, mem_ob, offset, size, ptr, no_events, code);
    end Enqueue_Read;
 
    function Enqueue_Kernel(queue: in out Command_Queue'Class; kern: in out Kernel'Class; glob_ws: Dimensions; loc_ws: Dimensions; events_to_wait_for: in Events; code: out Status) return Event is
@@ -274,5 +281,41 @@ package body cl_objects is
    begin
       Cleanup.Release(This.handle);
    end Finalize;
+
+   procedure Free_Context_Impl is new Ada.Unchecked_Deallocation(Object => Context,
+                                                                 Name   => Context_Access);
+   procedure Free_Command_Queue_Impl is new Ada.Unchecked_Deallocation(Object => Command_Queue,
+                                                                       Name   => Command_Queue_Access);
+   procedure Free_Program_Impl is new Ada.Unchecked_Deallocation(Object => Program,
+                                                                 Name   => Program_Access);
+   procedure Free_Kernel_Impl is new Ada.Unchecked_Deallocation(Object => Kernel,
+                                                                Name   => Kernel_Access);
+   procedure Free_Buffer_Impl is new Ada.Unchecked_Deallocation(Object => Buffer,
+                                                                Name   => Buffer_Access);
+
+   procedure Free(ob: in out Context_Access) is
+   begin
+      Free_Context_Impl(ob);
+   end Free;
+
+   procedure Free(ob: in out Command_Queue_Access) is
+   begin
+      Free_Command_Queue_Impl(ob);
+   end Free;
+
+   procedure Free(ob: in out Program_Access) is
+   begin
+      Free_Program_Impl(ob);
+   end Free;
+
+   procedure Free(ob: in out Kernel_Access) is
+   begin
+      Free_Kernel_Impl(ob);
+   end Free;
+
+   procedure Free(ob: in out Buffer_Access) is
+   begin
+      Free_Buffer_Impl(ob);
+   end Free;
 
 end cl_objects;

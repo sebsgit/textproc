@@ -8,4 +8,5 @@ package ImageIO is
 
    function load(filename: String) return PixelArray.ImagePlane;
    function save(filename: String; image: PixelArray.ImagePlane) return Boolean;
+   procedure save(filename: String; image: PixelArray.ImagePlane);
 end ImageIO;

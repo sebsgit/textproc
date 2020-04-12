@@ -10,6 +10,7 @@ package PixelArray.Gpu is
                             Type_Invariant => Check);
 
    type GpuImage is tagged limited private;
+   type GpuImage_Access is access all GpuImage;
 
    function Get_Width(img: in GpuImage) return Natural;
    function Get_Height(img: in GpuImage) return Natural;

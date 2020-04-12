@@ -28,12 +28,20 @@ package body opencl is
    package C_SizeT_Arr_Conv is new System.Address_To_Access_Conversions(Object => C_SizeT_Array);
 
    function Convert(code: in Interfaces.C.int) return Status is
+      result: Status;
    begin
-      return Status'Enum_Val(code);
-   exception
-      when E: Constraint_Error =>
-         Ada.Text_IO.Put_Line("Status code not recognized: " & code'Image);
-         raise;
+      begin
+         if code = -9999 then
+            Ada.Text_IO.Put_Line("CODE 9999!");
+            return opencl.INVALID_VALUE;
+         end if;
+         result := Status'Enum_Val(code);
+      exception
+         when E: Constraint_Error =>
+            Ada.Text_IO.Put_Line("Status code not recognized: " & code'Image);
+            raise;
+      end;
+      return result;
    end Convert;
 
    function Convert(code: in cl_int) return Status is

@@ -22,6 +22,12 @@ package cl_objects is
    type Kernel_Access is access all Kernel;
    type Buffer_Access is access all Buffer;
 
+   procedure Free(ob: in out Context_Access);
+   procedure Free(ob: in out Command_Queue_Access);
+   procedure Free(ob: in out Program_Access);
+   procedure Free(ob: in out Kernel_Access);
+   procedure Free(ob: in out Buffer_Access);
+
    function Create(context_platform: in Platform_ID; context_device: in Device_ID; result_status: out Status) return Context
      with Pre => context_platform /= 0 and context_device /= 0;
    function Create_Gpu(result_status: out Status) return Context;
@@ -34,6 +40,7 @@ package cl_objects is
    function Create_Buffer(ctx: in out Context'Class; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Buffer;
    function Enqueue_Write(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
    function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
+   function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; code: out Status) return Event;
    function Enqueue_Kernel(queue: in out Command_Queue'Class; kern: in out Kernel'Class; glob_ws: Dimensions; loc_ws: Dimensions; events_to_wait_for: in Events; code: out Status) return Event;
    function Enqueue_Kernel(queue: in out Command_Queue'Class; kern: in out Kernel'Class; glob_ws: Dimensions; loc_ws: Dimensions; code: out Status) return Event;
 

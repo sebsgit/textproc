@@ -14,6 +14,7 @@ with CSVTests;
 with OpenCLTests;
 with GpuImageTests;
 with GpuInferenceTests;
+with GpuComponentLabelingTests;
 
 package body MainTestSuite is
    use AUnit.Test_Suites;
@@ -33,11 +34,13 @@ package body MainTestSuite is
    openclTestCase: aliased OpenCLTests.TestCase;
    gpuImageTestCase: aliased GpuImageTests.TestCase;
    gpuInferenceTestCase: aliased GpuInferenceTests.TestCase;
+   gpuCCLTestCase: aliased GpuComponentLabelingTests.TestCase;
 
    function Suite return Access_Test_Suite is
    begin
       Add_Test(suiteObject'Access, openclTestCase'Access);
       Add_Test(suiteObject'Access, gpuImageTestCase'Access);
+      Add_Test(suiteObject'Access, gpuCCLTestCase'Access);
       Add_Test(suiteObject'Access, gpuInferenceTestCase'Access);
       Add_Test(suiteObject'Access, csvTestCase'Access);
       Add_Test(suiteObject'Access, imageTestCase'Access);

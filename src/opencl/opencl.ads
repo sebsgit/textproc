@@ -1,7 +1,7 @@
 with System; use System;
 with System.Address_To_Access_Conversions;
 with cl_h;
-with Interfaces.C;
+with Interfaces.C; use Interfaces.C;
 
 package opencl is
    pragma Elaborate_Body;
@@ -9,13 +9,30 @@ package opencl is
                             Post => Check,
                             Type_Invariant => Check);
 
-   type cl_int is new Interfaces.C.int;
-   type cl_uint is new Interfaces.C.unsigned;
-   type cl_uchar is new Interfaces.C.unsigned_char;
+   type cl_int is new Integer range - 2 ** 31 .. 2 ** 31 - 1;
+   for cl_int'Size use 32;
+
+   type cl_uint is new Interfaces.C.unsigned range 0 .. 2 ** 32 - 1;
+   for cl_uint'Size use 32;
+
+   type cl_uchar is new Integer range 0 .. 255;
+   for cl_uchar'Size use 8;
+
    type cl_float is new Interfaces.C.C_float;
+   for cl_float'Size use 32;
+
    type cl_bool is new cl_uint;
+
    type cl_ulong is mod 2 ** 64;
+   for cl_ulong'Size use 64;
+
    type cl_mem_flags is new cl_ulong;
+
+   type cl_short is new Integer range -32768 .. 32767;
+   for cl_short'Size use 16;
+
+   type cl_ushort is new Integer range 0 .. 65535;
+   for cl_ushort'Size use 16;
 
    type Status is (INVALID_GLOBAL_WORK_SIZE, INVALID_OPERATION, INVALID_EVENT_WAIT_LIST, INVALID_WORK_GROUP_SIZE, INVALID_KERNEL_ARGS, INVALID_ARG_SIZE, INVALID_PROGRAM_EXECUTABLE, INVALID_MEM_OBJECT, INVALID_CONTEXT, INVALID_PLATFORM, INVALID_VALUE, BUILD_PROGRAM_FAILURE, OUT_OF_HOST_MEMORY, SUCCESS);
    for Status use (INVALID_GLOBAL_WORK_SIZE => cl_h.CL_INVALID_GLOBAL_WORK_SIZE,

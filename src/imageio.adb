@@ -79,4 +79,10 @@ package body ImageIO is
       return save(C.Strings.New_String(filename), image);
    end save;
 
+   procedure save(filename: String; image: PixelArray.ImagePlane) is
+      flag: Boolean;
+   begin
+      flag := save(C.Strings.New_String(filename), image);
+   end save;
+
 end ImageIO;
