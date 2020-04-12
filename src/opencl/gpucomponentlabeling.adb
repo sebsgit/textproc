@@ -102,6 +102,7 @@ package body GpuComponentLabeling is
          res.context := ctx;
          res.width := opencl.cl_int(width);
          res.height := opencl.cl_int(height);
+         res.max_ccl_size := res.width * res.height;
 
          res.gpu_queue := new cl_objects.Command_Queue'(ctx.Create_Command_Queue(cl_code));
          if cl_code /= opencl.SUCCESS then return; end if;
@@ -146,9 +147,28 @@ package body GpuComponentLabeling is
       Free(This.processing_program);
    end Finalize;
 
+   function Prepare_Size(proc: in out Processor; w, h: in Natural) return opencl.Status is
+      cl_code: opencl.Status := opencl.SUCCESS;
+   begin
+      if w * h > Natural(proc.max_ccl_size) then
+         cl_objects.Free(proc.ccl_data);
+         proc.ccl_data := new cl_objects.Buffer'(proc.context.Create_Buffer(flags         => (opencl.READ_WRITE => True, opencl.ALLOC_HOST_PTR => True, others => false),
+                                                                            size          => w * h * Pixel_CCL_Data'Size / 8,
+                                                                            host_ptr      => System.Null_Address,
+                                                                            result_status => cl_code));
+         proc.max_ccl_size := opencl.cl_int(w * h);
+      end if;
+      proc.width := opencl.cl_int(w);
+      proc.height := opencl.cl_int(h);
+      return cl_code;
+   end Prepare_Size;
+
    function Init_CCL_Data(proc: in out Processor; gpu_image: in out PixelArray.Gpu.GpuImage; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
    begin
-      --TODO input events
+      cl_code := proc.Prepare_Size(gpu_image.Get_Width, gpu_image.Get_Height);
+      if cl_code /= opencl.SUCCESS then
+         return cl_objects.Create_Empty;
+      end if;
       cl_code := proc.initialization_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, gpu_image.Get_Address);
       cl_code := proc.initialization_kernel.Set_Arg(1, 4, proc.width'Address);
       cl_code := proc.initialization_kernel.Set_Arg(2, 4, proc.height'Address);
