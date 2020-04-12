@@ -5,7 +5,6 @@ with PixelArray.Gpu;
 with System;
 with Ada.Finalization;
 
---TODO optimize local work group sizes
 package GpuComponentLabeling is
    pragma Elaborate_Body;
    pragma Assertion_Policy (Pre => Check,

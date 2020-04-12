@@ -188,4 +188,6 @@ package opencl is
    function Release(mem_ob: in Mem_ID) return Status
      with Pre => mem_ob /= 0;
 
+   function Get_Local_Work_Size(width, height: in Positive) return Dimensions;
+
 end opencl;

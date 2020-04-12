@@ -144,7 +144,7 @@ package body GpuComponentLabeling is
       cl_code := proc.initialization_kernel.Set_Arg(3, opencl.Raw_Address'Size / 8, proc.ccl_data.Get_Address);
       return proc.gpu_queue.Enqueue_Kernel(kern               => proc.initialization_kernel.all,
                                            glob_ws            => (1 => proc.Get_Width, 2 => proc.Get_Height),
-                                           loc_ws             => (1, 1), --TODO
+                                           loc_ws             => opencl.Get_Local_Work_Size(proc.Get_Width, proc.Get_Height),
                                            events_to_wait_for => events_to_wait,
                                            code               => cl_code);
    end Init_CCL_Data;
@@ -156,21 +156,22 @@ package body GpuComponentLabeling is
       cl_code := proc.vertical_pass_kernel.Set_Arg(2, 4, proc.height'Address);
       return proc.gpu_queue.Enqueue_Kernel(kern               => proc.vertical_pass_kernel.all,
                                            glob_ws            => (1 => proc.Get_Width, 2 => 1),
-                                           loc_ws             => (1, 1), --TODO
+                                           loc_ws             => opencl.Get_Local_Work_Size(proc.Get_Width, 1),
                                            events_to_wait_for => events_to_wait,
                                            code               => cl_code);
    end Vertical_Pass;
 
    function Merge_Pass(proc: in out Processor; width_div: in Positive; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return cl_objects.Event is
       width_div_arg: aliased opencl.cl_int := opencl.cl_int(width_div);
+      kernel_size_x: constant Natural := Natural(Float'Ceiling(Float(proc.Get_Width) / Float(width_div)));
    begin
       cl_code := proc.merge_pass_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, proc.ccl_data.Get_Address);
       cl_code := proc.merge_pass_kernel.Set_Arg(1, 4, proc.width'Address);
       cl_code := proc.merge_pass_kernel.Set_Arg(2, 4, proc.height'Address);
       cl_code := proc.merge_pass_kernel.Set_Arg(3, 4, width_div_arg'Address);
       return proc.gpu_queue.Enqueue_Kernel(kern               => proc.merge_pass_kernel.all,
-                                           glob_ws            => (1 => Natural(Float'Ceiling(Float(proc.Get_Width) / Float(width_div))), 2 => proc.Get_Height),
-                                           loc_ws             => (1, 1), --TODO
+                                           glob_ws            => (1 => kernel_size_x, 2 => proc.Get_Height),
+                                           loc_ws             => opencl.Get_Local_Work_Size(kernel_size_x, proc.Get_Height),
                                            events_to_wait_for => events_to_wait,
                                            code               => cl_code);
    end Merge_Pass;

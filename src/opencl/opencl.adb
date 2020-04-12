@@ -613,4 +613,23 @@ package body opencl is
       return Convert(cl_code);
    end Release;
 
+   function Get_Local_Work_Size(width, height: in Positive) return opencl.Dimensions is
+      result: opencl.Dimensions := (1 => 1, 2 => 1);
+      preferred_multiples: constant opencl.Dimensions := (32, 16, 8, 4, 2);
+   begin
+      for m of preferred_multiples loop
+         if width rem m = 0 then
+            result(1) := m;
+            exit;
+         end if;
+      end loop;
+      for m of preferred_multiples loop
+         if height rem m = 0 then
+            result(2) := m;
+            exit;
+         end if;
+      end loop;
+      return result;
+   end Get_Local_Work_Size;
+
 end opencl;
