@@ -24,9 +24,13 @@ package PixelArray.Gpu is
    function Download(queue: in out Command_Queue'Class; source: in out GpuImage; target: in out ImagePlane; event_to_wait: in opencl.Events; status: out opencl.Status) return Event
      with Pre => source.Get_Width = target.width and source.Get_Height = target.height;
 
+   procedure Set_Size(source: in out GpuImage; context: in out cl_objects.Context'Class; width, height: in Positive);
+   function Upload_Image(source: in out GpuImage; ctx: in out Context'Class; queue: in out Command_Queue; image: in ImagePlane) return opencl.Status;
+
 private
    type GpuImage is tagged limited record
       data: cl_objects.Buffer;
       width, height: Natural;
+      max_size: Natural;
    end record;
 end PixelArray.Gpu;

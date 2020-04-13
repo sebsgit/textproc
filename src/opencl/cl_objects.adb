@@ -65,6 +65,11 @@ package body cl_objects is
       return Create_Command_Queue(ctx, ctx.device, result_status);
    end Create_Command_Queue;
 
+   function Get_ID(ctx: in out Context'Class) return Context_ID is
+   begin
+      return ctx.handle;
+   end Get_ID;
+
    function Create_Buffer(ctx: in out Context'Class; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Buffer is
    begin
       return buff: Buffer do
@@ -222,6 +227,11 @@ package body cl_objects is
    begin
       return buff.handle;
    end Get_ID;
+
+   procedure Set_ID(buff: in out Buffer; id: in opencl.Mem_ID) is
+   begin
+      buff.handle := id;
+   end Set_ID;
 
    generic
       type Handle_Type is new Raw_Address;

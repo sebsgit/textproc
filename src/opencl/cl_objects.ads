@@ -37,6 +37,7 @@ package cl_objects is
      with Pre => dev /= 0;
    function Create_Command_Queue(ctx: in out Context'Class; result_status: out Status) return Command_Queue;
 
+   function Get_ID(ctx: in out Context'Class) return Context_ID;
    function Create_Buffer(ctx: in out Context'Class; flags: in Mem_Flags; size: Positive; host_ptr: System.Address; result_status: out Status) return Buffer;
    function Enqueue_Write(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
    function Enqueue_Read(queue: in out Command_Queue'Class; mem_ob: in out Buffer'Class; offset: Natural; size: Positive; ptr: System.Address; events_to_wait_for: in Events; code: out Status) return Event;
@@ -56,6 +57,7 @@ package cl_objects is
 
    function Get_Address(buff: in out Buffer'Class) return System.Address;
    function Get_ID(buff: in Buffer) return opencl.Mem_ID;
+   procedure Set_ID(buff: in out Buffer; id: in opencl.Mem_ID);
 
    function Wait(ev: in out Event) return Status;
    function Get_Handle(ev: in Event) return opencl.Event_ID;

@@ -31,8 +31,11 @@ package body ShapeDatabase is
    Dilate_Kernel_Size: constant Positive := 7;
 
    gpu_context: cl_objects.Context_Access;
+   gpu_queue: cl_objects.Command_Queue_Access;
    gpu_processor: GpuImageProc.Processor_Access;
    gpu_detector: GpuComponentLabeling.Processor_Access;
+   gpu_source_cache: PixelArray.Gpu.GpuImage_Access;
+   gpu_target_cache: PixelArray.Gpu.GpuImage_Access;
 
    procedure Find_Gpu_Device(platf: out Platform_ID; dev: out Device_ID) is
       cl_code: opencl.Status;
@@ -79,6 +82,12 @@ package body ShapeDatabase is
          return;
       end if;
 
+      gpu_queue := new cl_objects.Command_Queue'(gpu_context.Create_Command_Queue(cl_status));
+      if cl_status /= opencl.SUCCESS then
+         Ada.Text_IO.Put_Line("Cannot init GPU queue: " & cl_status'Image);
+         return;
+      end if;
+
       gpu_processor := new GpuImageProc.Processor'(GpuImageProc.Create_Processor(context => gpu_context.all,
                                                                                  status  => cl_status));
 
@@ -97,7 +106,34 @@ package body ShapeDatabase is
          gpu_detector := null;
          return;
       end if;
+
+      gpu_source_cache := new PixelArray.Gpu.GpuImage'(PixelArray.Gpu.Create(ctx    => gpu_context.all,
+                                                                             flags  => (others => False),
+                                                                             width  => 256,
+                                                                             height => 256,
+                                                                             status => cl_status));
+      gpu_target_cache := new PixelArray.Gpu.GpuImage'(PixelArray.Gpu.Create(ctx    => gpu_context.all,
+                                                                             flags  => (others => False),
+                                                                             width  => 256,
+                                                                             height => 256,
+                                                                             status => cl_status));
    end Init_Gpu;
+
+   function Ensure_Cache_Size(gpu_image: in out PixelArray.Gpu.GpuImage; context: in out cl_objects.Context; width, height: in Positive) return Boolean is
+   begin
+      if gpu_image.Get_Width /= width or gpu_image.Get_Height /= height then
+         gpu_image.Set_Size(context => context,
+                            width  => width,
+                            height => height);
+      end if;
+      return True;
+   end Ensure_Cache_Size;
+
+   function Ensure_Cache_Size(gpu_image: in out PixelArray.Gpu.GpuImage; context: in out cl_objects.Context; image: in PixelArray.ImagePlane) return Boolean is
+      cl_code: constant opencl.Status := gpu_image.Upload_Image(context, gpu_queue.all, image);
+   begin
+      return (cl_code = opencl.SUCCESS);
+   end Ensure_Cache_Size;
 
    procedure Detect_Image_Regions(image: in out PixelArray.ImagePlane; res: out ImageRegions.RegionVector.Vector) is
       cl_code: opencl.Status;
@@ -111,19 +147,15 @@ package body ShapeDatabase is
    end Detect_Image_Regions;
 
    function Preprocess_Gpu(gpuSource: in out PixelArray.Gpu.GpuImage; cl_code: out opencl.Status) return cl_objects.Event is
-      gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Create(ctx    => gpu_context.all,
-                                                                  flags  => (others => False),
-                                                                  width => gpuSource.Get_Width,
-                                                                  height => gpuSource.Get_Height,
-                                                                  status => cl_code);
+      cache_status: Boolean := Ensure_Cache_Size(gpu_target_cache.all, gpu_context.all, gpuSource.Get_Width, gpuSource.Get_Height);
       gauss_proc_event: constant cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
                                                                                    source  => gpuSource,
-                                                                                   target  => gpuTarget,
+                                                                                   target  => gpu_target_cache.all,
                                                                                    size    => Gauss_Filter_Kernel_Size,
                                                                                    sigma   => Gauss_Filter_Sigma,
                                                                                    cl_code => cl_code);
       proc_event: constant cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
-                                                                                          source  => gpuTarget,
+                                                                                          source  => gpu_target_cache.all,
                                                                                           target  => gpuSource,
                                                                                           radius  => Bernsen_Threshold_Circle_Radius,
                                                                                           c_min   => Bernsen_Threshold_Contrast_Limit,
@@ -131,13 +163,13 @@ package body ShapeDatabase is
                                                                                           cl_code => cl_code);
       erode_event: constant cl_objects.Event := gpu_processor.Erode(ctx            => gpu_context.all,
                                                                     source         => gpuSource,
-                                                                    target         => gpuTarget,
+                                                                    target         => gpu_target_cache.all,
                                                                     size           => Erode_Kernel_Size,
                                                                     events_to_wait => (1 => proc_event.Get_Handle),
                                                                     cl_code        => cl_code);
    begin
       return gpu_processor.Dilate(ctx            => gpu_context.all,
-                                  source         => gpuTarget,
+                                  source         => gpu_target_cache.all,
                                   target         => gpuSource,
                                   size           => Dilate_Kernel_Size,
                                   events_to_wait => (1 => erode_event.Get_Handle),
@@ -155,14 +187,11 @@ package body ShapeDatabase is
                                                                      height => image.height) do
             declare
                cl_code: opencl.Status;
-               gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
-                                                                           flags  => (others => False),
-                                                                           image  => image,
-                                                                           status => cl_code);
-               preproc_event: constant cl_objects.Event := Preprocess_Gpu(gpuSource => gpuSource,
+               cache_status: Boolean := Ensure_Cache_Size(gpu_source_cache.all, gpu_context.all, image);
+               preproc_event: constant cl_objects.Event := Preprocess_Gpu(gpuSource => gpu_source_cache.all,
                                                                           cl_code   => cl_code);
             begin
-               res := gpu_detector.Detect_Regions_And_Assign_Labels(preprocessed_gpu_image => gpuSource,
+               res := gpu_detector.Detect_Regions_And_Assign_Labels(preprocessed_gpu_image => gpu_source_cache.all,
                                                                     target_cpu_image       => result,
                                                                     events_to_wait         => (1 => preproc_event.Get_Handle),
                                                                     cl_code                => cl_code);
@@ -181,13 +210,10 @@ package body ShapeDatabase is
          if gpu_processor /= null then
             declare
                cl_code: opencl.Status;
-               gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
-                                                                           flags  => (others => False),
-                                                                           image  => image,
-                                                                           status => cl_code);
-               preproc_event: constant cl_objects.Event := Preprocess_Gpu(gpuSource => gpuSource,
+               cache_status: Boolean := Ensure_Cache_Size(gpu_source_cache.all, gpu_context.all, image);
+               preproc_event: constant cl_objects.Event := Preprocess_Gpu(gpuSource => gpu_source_cache.all,
                                                                           cl_code   => cl_code);
-               downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, (1 => preproc_event.Get_Handle), cl_code);
+               downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpu_source_cache.all, result, (1 => preproc_event.Get_Handle), cl_code);
             begin
                cl_code := downl_ev.Wait;
                if cl_code = opencl.SUCCESS then

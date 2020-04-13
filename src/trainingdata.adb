@@ -14,6 +14,8 @@ with ImageRegions;
 use Ada.Containers;
 use Ada.Strings.Unbounded;
 
+with Timer;
+
 package body TrainingData is
    package String_Vec_Pkg is new Ada.Containers.Vectors(Index_Type => Positive, Element_Type => Ada.Strings.Unbounded.Unbounded_String);
 
@@ -56,9 +58,11 @@ package body TrainingData is
    procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String; expectedChars: in Ada.Strings.Unbounded.Unbounded_String) is
       image: constant PixelArray.ImagePlane := ImageIO.load(Ada.Strings.Unbounded.To_String(path));
       regions: ImageRegions.RegionVector.Vector;
+      tmr: Timer.T := Timer.start;
       preprocessed: constant PixelArray.ImagePlane := ShapeDatabase.Preprocess_And_Detect_Regions(image, regions);
       saveStatus: Boolean;
    begin
+      tmr.report("shape db preprocess");
       filterRegions(regions);
       ImageRegions.sortRegions(regions);
 
