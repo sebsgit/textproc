@@ -77,6 +77,7 @@ package body ShapeDatabase is
 
       if cl_status /= opencl.SUCCESS then
          Ada.Text_IO.Put_Line("Cannot init GPU processor: " & cl_status'Image);
+         gpu_processor := null;
          return;
       end if;
 
@@ -86,6 +87,7 @@ package body ShapeDatabase is
                                                                                       cl_code => cl_status));
       if cl_status /= opencl.SUCCESS then
          Ada.Text_IO.Put_Line("Cannot init GPU detector: " & cl_status'Image);
+         gpu_detector := null;
          return;
       end if;
    end Init_Gpu;
@@ -103,9 +105,57 @@ package body ShapeDatabase is
 
    function Preprocess_And_Detect_Regions(image: in PixelArray.ImagePlane; res: out ImageRegions.RegionVector.Vector) return PixelArray.ImagePlane is
    begin
-      return processed: PixelArray.ImagePlane := preprocess(image) do
-         Detect_Image_Regions(processed, res);
-      end return;
+      if gpu_detector = null or gpu_processor = null then
+         return processed: PixelArray.ImagePlane := preprocess(image) do
+            Detect_Image_Regions(processed, res);
+         end return;
+      else
+         return result: PixelArray.ImagePlane := PixelArray.allocate(width  => image.width,
+                                                                     height => image.height) do
+            declare
+               cl_code: opencl.Status;
+               gpuSource: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => gpu_context.all,
+                                                                           flags  => (others => False),
+                                                                           image  => image,
+                                                                           status => cl_code);
+               gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Create(ctx    => gpu_context.all,
+                                                                           flags  => (others => False),
+                                                                           width => image.width,
+                                                                           height => image.height,
+                                                                           status => cl_code);
+               gauss_proc_event: constant cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
+                                                                                            source  => gpuSource,
+                                                                                            target  => gpuTarget,
+                                                                                            size    => 7,
+                                                                                            sigma   => 2.4,
+                                                                                            cl_code => cl_code);
+               proc_event: constant cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
+                                                                                                   source  => gpuTarget,
+                                                                                                   target  => gpuSource,
+                                                                                                   radius  => 10,
+                                                                                                   c_min   => 35,
+                                                                                                   events_to_wait => (1 => gauss_proc_event.Get_Handle),
+                                                                                                   cl_code => cl_code);
+               erode_event: constant cl_objects.Event := gpu_processor.Erode(ctx            => gpu_context.all,
+                                                                             source         => gpuSource,
+                                                                             target         => gpuTarget,
+                                                                             size           => 7,
+                                                                             events_to_wait => (1 => proc_event.Get_Handle),
+                                                                             cl_code        => cl_code);
+               dilate_event: constant cl_objects.Event := gpu_processor.Dilate(ctx            => gpu_context.all,
+                                                                               source         => gpuTarget,
+                                                                               target         => gpuSource,
+                                                                               size           => 7,
+                                                                               events_to_wait => (1 => erode_event.Get_Handle),
+                                                                               cl_code        => cl_code);
+            begin
+               res := gpu_detector.Detect_Regions_And_Assign_Labels(preprocessed_gpu_image => gpuSource,
+                                                                    target_cpu_image       => result,
+                                                                    events_to_wait         => (1 => dilate_event.Get_Handle),
+                                                                    cl_code                => cl_code);
+            end;
+         end return;
+      end if;
    end Preprocess_And_Detect_Regions;
 
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane is

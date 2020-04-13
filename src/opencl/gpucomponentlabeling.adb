@@ -360,15 +360,11 @@ package body GpuComponentLabeling is
       return result;
    end Detect_Regions;
 
-   function Detect_Regions_And_Assign_Labels(proc: in out Processor; preprocessed_cpu_image: in out PixelArray.ImagePlane; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector is
+   function Detect_Regions_And_Assign_Labels(proc: in out Processor; preprocessed_gpu_image: in out PixelArray.Gpu.GpuImage; target_cpu_image: in out PixelArray.ImagePlane; events_to_wait: in opencl.Events; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector is
       result: ImageRegions.RegionVector.Vector;
-      host_ccl_data: aliased CCL_Data(1 .. preprocessed_cpu_image.width * preprocessed_cpu_image.height);
-      gpu_image: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => proc.context.all,
-                                                                  flags  => (opencl.COPY_HOST_PTR => True, others => False),
-                                                                  image  => preprocessed_cpu_image,
-                                                                  status => cl_code);
-      ccl_ev: constant cl_objects.Event := proc.Run_CCL(gpu_image      => gpu_image,
-                                                        events_to_wait => opencl.no_events,
+      host_ccl_data: aliased CCL_Data(1 .. preprocessed_gpu_image.Get_Width * preprocessed_gpu_image.Get_Height);
+      ccl_ev: constant cl_objects.Event := proc.Run_CCL(gpu_image      => preprocessed_gpu_image,
+                                                        events_to_wait => events_to_wait,
                                                         cl_code        => cl_code);
       ccl_down_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff      => host_ccl_data'Address,
                                                          events_to_wait => (1 => ccl_ev.Get_Handle),
@@ -403,7 +399,7 @@ package body GpuComponentLabeling is
             label_count_arg: aliased opencl.cl_int := opencl.cl_int(unique_labels.Length);
          begin
             cl_code := proc.label_assign_pass_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, proc.ccl_data.Get_Address);
-            cl_code := proc.label_assign_pass_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, gpu_image.Get_Address);
+            cl_code := proc.label_assign_pass_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, preprocessed_gpu_image.Get_Address);
             cl_code := proc.label_assign_pass_kernel.Set_Arg(2, 4, proc.width'Address);
             cl_code := proc.label_assign_pass_kernel.Set_Arg(3, 4, proc.height'Address);
             cl_code := proc.label_assign_pass_kernel.Set_Arg(4, opencl.Raw_Address'Size / 8, label_buffer.Get_Address);
@@ -415,8 +411,8 @@ package body GpuComponentLabeling is
                                                                                          events_to_wait_for => opencl.no_events,
                                                                                          code               => cl_code);
                data_downl_ev: cl_objects.Event := PixelArray.Gpu.Download(queue         => proc.gpu_queue.all,
-                                                                          source        => gpu_image,
-                                                                          target        => preprocessed_cpu_image,
+                                                                          source        => preprocessed_gpu_image,
+                                                                          target        => target_cpu_image,
                                                                           event_to_wait => (1 => label_pass_ev.Get_Handle),
                                                                           status        => cl_code);
             begin
@@ -445,6 +441,20 @@ package body GpuComponentLabeling is
          end;
       end if;
       return result;
+   end Detect_Regions_And_Assign_Labels;
+
+   function Detect_Regions_And_Assign_Labels(proc: in out Processor; preprocessed_cpu_image: in out PixelArray.ImagePlane; cl_code: out opencl.Status) return ImageRegions.RegionVector.Vector is
+      gpu_image: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Upload(ctx    => proc.context.all,
+                                                                  flags  => (opencl.COPY_HOST_PTR => True, others => False),
+                                                                  image  => preprocessed_cpu_image,
+                                                                  status => cl_code);
+
+   begin
+      return Detect_Regions_And_Assign_Labels(proc                   => proc,
+                                              preprocessed_gpu_image => gpu_image,
+                                              target_cpu_image       => preprocessed_cpu_image,
+                                              events_to_wait         => opencl.no_events,
+                                              cl_code                => cl_code);
    end Detect_Regions_And_Assign_Labels;
 
 end GpuComponentLabeling;
