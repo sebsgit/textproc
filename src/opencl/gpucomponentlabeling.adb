@@ -16,6 +16,7 @@ package body GpuComponentLabeling is
      "   uint label;" & NL &
      "   int min_x, min_y;" & NL &
      "   int max_x, max_y;" & NL &
+     "   uint px_count;" & NL &
      "} ccl_data;" & NL &
      "" & NL &
      "uint find_root_by_label(__global const ccl_data *data, uint label) {" & NL &
@@ -36,6 +37,7 @@ package body GpuComponentLabeling is
      "   output[px_i].min_y = px_y;" & NL &
      "   output[px_i].max_x = px_x;" & NL &
      "   output[px_i].max_y = px_y;" & NL &
+     "   output[px_i].px_count = 1;" & NL &
      "}" & NL;
 
    vpass_kernel_source: constant String :=
@@ -50,6 +52,7 @@ package body GpuComponentLabeling is
      "         atomic_min(&data[root_idx].min_y, r - 1);" & NL &
      "         atomic_max(&data[root_idx].max_x, px_x);" & NL &
      "         atomic_max(&data[root_idx].max_y, r);" & NL &
+     "         atomic_inc(&data[root_idx].px_count);" & NL &
      "         curr.label = prev.label;" & NL &
      "         data[px_x + r * width].label = prev.label;" & NL &
      "      }" & NL &
@@ -69,13 +72,18 @@ package body GpuComponentLabeling is
      "      if (left > 0 && right > 0) {" & NL &
      "         const uint root_left = find_root_by_label(data, left);" & NL &
      "         const uint root_right = find_root_by_label(data, right);" & NL &
-     "         const int root_idx = min(root_left, root_right) - 1;" & NL &
-     "         const ccl_data old_root = data[max(root_left, root_right) - 1];" & NL &
-     "         data[max(root_left, root_right) - 1].label = data[root_idx].label;" & NL &
-     "         atomic_min(&data[root_idx].min_x, min(col_id, old_root.min_x));" & NL &
-     "         atomic_min(&data[root_idx].min_y, min(px_y, old_root.min_y));" & NL &
-     "         atomic_max(&data[root_idx].max_x, max(next_col, old_root.max_x));" & NL &
-     "         atomic_max(&data[root_idx].max_y, max(px_y, old_root.max_y));" & NL &
+     "         if (root_left != root_right) {" & NL &
+     "            const int root_idx = min(root_left, root_right) - 1;" & NL &
+     "            const ccl_data old_root = data[max(root_left, root_right) - 1];" & NL &
+     "            data[max(root_left, root_right) - 1].label = data[root_idx].label;" & NL &
+     "            const uint old_px_cnt = atomic_xchg(&data[max(root_left, root_right) - 1].px_count, 0);" & NL &
+     "            atomic_min(&data[root_idx].min_x, min(col_id, old_root.min_x));" & NL &
+     "            atomic_min(&data[root_idx].min_y, min(px_y, old_root.min_y));" & NL &
+     "            atomic_max(&data[root_idx].max_x, max(next_col, old_root.max_x));" & NL &
+     "            atomic_max(&data[root_idx].max_y, max(px_y, old_root.max_y));" & NL &
+     "            if (old_px_cnt > 0)" & NL &
+     "               atomic_add(&data[root_idx].px_count, old_px_cnt);" & NL &
+     "         }" & NL &
      "      }" & NL &
      "   }" & NL &
      "}" & NL;
@@ -339,9 +347,8 @@ package body GpuComponentLabeling is
                new_rg.area.y := Natural(gpu_rg.min_y);
                new_rg.area.width := Natural(gpu_rg.max_x - gpu_rg.min_x);
                new_rg.area.height := Natural(gpu_rg.max_y - gpu_rg.min_y);
-
+               new_rg.pixelCount := Natural(gpu_rg.px_count);
                --TODO not really
-               new_rg.pixelCount := new_rg.area.width * new_rg.area.height;
                new_rg.center.x := Float(new_rg.area.x + new_rg.area.width / 2);
                new_rg.center.y := Float(new_rg.area.y + new_rg.area.height / 2);
 
@@ -363,9 +370,9 @@ package body GpuComponentLabeling is
       ccl_ev: constant cl_objects.Event := proc.Run_CCL(gpu_image      => gpu_image,
                                                         events_to_wait => opencl.no_events,
                                                         cl_code        => cl_code);
-      ccl_down_ev: constant cl_objects.Event := proc.Get_CCL_Data(host_buff      => host_ccl_data'Address,
-                                                                  events_to_wait => (1 => ccl_ev.Get_Handle),
-                                                                  cl_code        => cl_code);
+      ccl_down_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff      => host_ccl_data'Address,
+                                                         events_to_wait => (1 => ccl_ev.Get_Handle),
+                                                         cl_code        => cl_code);
 
       type HostLblBuff is array (Positive range <>) of opencl.cl_uint;
       function Convert(v: in Region_Data_Vec.Vector) return HostLblBuff is
@@ -407,43 +414,34 @@ package body GpuComponentLabeling is
                                                                                          loc_ws             => opencl.Get_Local_Work_Size(proc.Get_Width, proc.Get_Height),
                                                                                          events_to_wait_for => opencl.no_events,
                                                                                          code               => cl_code);
-               data_downl_ev: constant cl_objects.Event := PixelArray.Gpu.Download(queue         => proc.gpu_queue.all,
-                                                                                   source        => gpu_image,
-                                                                                   target        => preprocessed_cpu_image,
-                                                                                   event_to_wait => (1 => label_pass_ev.Get_Handle),
-                                                                                   status        => cl_code);
+               data_downl_ev: cl_objects.Event := PixelArray.Gpu.Download(queue         => proc.gpu_queue.all,
+                                                                          source        => gpu_image,
+                                                                          target        => preprocessed_cpu_image,
+                                                                          event_to_wait => (1 => label_pass_ev.Get_Handle),
+                                                                          status        => cl_code);
             begin
                if cl_code /= opencl.SUCCESS then
                   return result;
                end if;
-               cl_code := opencl.Wait_For_Events((1 => ccl_down_ev.Get_Handle, 2 => data_downl_ev.Get_Handle));
+               cl_code := ccl_down_ev.Wait;
+               for lbl of unique_labels loop
+                  gpu_rg := host_ccl_data(Natural(lbl));
+                  new_rg.label := label;
+                  new_rg.area.x := Natural(gpu_rg.min_x);
+                  new_rg.area.y := Natural(gpu_rg.min_y);
+                  new_rg.area.width := Natural(gpu_rg.max_x - gpu_rg.min_x);
+                  new_rg.area.height := Natural(gpu_rg.max_y - gpu_rg.min_y);
+                  new_rg.pixelCount := Natural(gpu_rg.px_count);
+                  new_rg.center.x := Float(new_rg.area.x + new_rg.area.width / 2);
+                  new_rg.center.y := Float(new_rg.area.y + new_rg.area.height / 2);
 
-            end; -- assign label pass kernel run
-
-            for lbl of unique_labels loop
-               gpu_rg := host_ccl_data(Natural(lbl));
-               new_rg.label := label;
-               new_rg.area.x := Natural(gpu_rg.min_x);
-               new_rg.area.y := Natural(gpu_rg.min_y);
-               new_rg.area.width := Natural(gpu_rg.max_x - gpu_rg.min_x);
-               new_rg.area.height := Natural(gpu_rg.max_y - gpu_rg.min_y);
-
-               new_rg.pixelCount := 0;
-               for rg of host_ccl_data loop
-                  if rg.label = lbl then
-                     new_rg.pixelCount := new_rg.pixelCount + 1;
+                  if new_rg.pixelCount > ImageRegions.New_Region_Pixel_Threshold then
+                     result.Append(new_rg);
                   end if;
+                  label := label + 1;
                end loop;
-
-               new_rg.center.x := Float(new_rg.area.x + new_rg.area.width / 2);
-               new_rg.center.y := Float(new_rg.area.y + new_rg.area.height / 2);
-
-               if new_rg.pixelCount > ImageRegions.New_Region_Pixel_Threshold then
-                  result.Append(new_rg);
-               end if;
-               label := label + 1;
-            end loop;
-
+               cl_code := data_downl_ev.Wait;
+            end; -- assign label pass kernel run
          end;
       end if;
       return result;

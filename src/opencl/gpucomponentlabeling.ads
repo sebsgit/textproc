@@ -19,8 +19,9 @@ package GpuComponentLabeling is
       label: opencl.cl_uint;
       min_x, min_y: opencl.cl_int;
       max_x, max_y: opencl.cl_int;
+      px_count: opencl.cl_uint;
    end record;
-   for Pixel_CCL_Data'Size use 32 * 5;
+   for Pixel_CCL_Data'Size use 32 * 6;
    pragma Convention(Convention => C, Entity => Pixel_CCL_Data);
 
    type CCL_Data is array (Natural range <>) of Pixel_CCL_Data;

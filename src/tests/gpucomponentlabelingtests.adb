@@ -133,6 +133,8 @@ package body GpuComponentLabelingTests is
                                                              events_to_wait => opencl.no_events,
                                                              cl_code   => cl_code);
                prev_d, curr_d: GpuComponentLabeling.Pixel_CCL_Data;
+               expected_rgn_cnt: opencl.cl_uint := 0;
+               region_cnt: opencl.cl_uint := 0;
             begin
                Assert(cl_code = opencl.SUCCESS, "downl init data: " & cl_code'Image);
                cl_code := dwn_ev.Wait;
@@ -141,8 +143,16 @@ package body GpuComponentLabelingTests is
                   for y in 0 .. test_image.height - 2 loop
                      prev_d := host_ccl_buffer(x + y * test_image.width + 1);
                      curr_d := host_ccl_buffer(x + (y + 1) * test_image.width + 1);
+                     if Natural(prev_d.label) = x + y * test_image.width + 1 then
+                        expected_rgn_cnt := prev_d.px_count;
+                        region_cnt := 1;
+                     end if;
                      if prev_d.label > 0 and curr_d.label > 0 then
+                        region_cnt := region_cnt + 1;
                         Assert(prev_d.label = curr_d.label, "label at " & y'Image & " " & prev_d.label'Image & " " & curr_d.label'Image);
+                     end if;
+                     if curr_d.label = 0 then
+                        Assert(expected_rgn_cnt = region_cnt, "pixel count: " & expected_rgn_cnt'Image & " " & region_cnt'Image);
                      end if;
                   end loop;
                end loop;
@@ -224,6 +234,7 @@ package body GpuComponentLabelingTests is
                           cpu_rg.area.height = Natural(rg.max_y - rg.min_y)
                         then
                            region_found := True;
+                           Assert(cpu_rg.pixelCount = Natural(rg.px_count), "Invalid pixel count: " & cpu_rg.pixelCount'Image & " " & rg.px_count'Image);
                            exit;
                         end if;
                      end loop;
