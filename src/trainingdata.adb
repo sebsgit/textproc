@@ -55,14 +55,30 @@ package body TrainingData is
       end loop;
    end filterRegions;
 
+   Preferred_Width: constant Positive := 1280;
+
+   function load_for_processing(path: in Ada.Strings.Unbounded.Unbounded_String) return PixelArray.ImagePlane is
+   begin
+      return image: PixelArray.ImagePlane := ImageIO.load(Ada.Strings.Unbounded.To_String(path)) do
+         if image.width > Preferred_Width  then
+            declare
+               ratio: constant Float := Float(Preferred_Width) / Float(image.width);
+               new_height: constant Positive := Positive(Float(image.height) * ratio);
+            begin
+               image.assign(image.rescale(Preferred_Width, new_height));
+            end;
+         end if;
+      end return;
+   end load_for_processing;
+
    procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String; expectedChars: in Ada.Strings.Unbounded.Unbounded_String) is
-      image: constant PixelArray.ImagePlane := ImageIO.load(Ada.Strings.Unbounded.To_String(path));
+      image: constant PixelArray.ImagePlane := load_for_processing(path);
       regions: ImageRegions.RegionVector.Vector;
       tmr: Timer.T := Timer.start;
       preprocessed: constant PixelArray.ImagePlane := ShapeDatabase.Preprocess_And_Detect_Regions(image, regions);
       saveStatus: Boolean;
    begin
-      tmr.report("shape db preprocess");
+      tmr.report("shape db preprocess for " & Ada.Strings.Unbounded.To_String(path) & ", " & image.width'Image & "x" & image.height'Image);
       filterRegions(regions);
       ImageRegions.sortRegions(regions);
 

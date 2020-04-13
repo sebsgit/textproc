@@ -113,6 +113,17 @@ package body TrainingSetTests is
                                  image    => image);
    end saveToFile;
 
+   function Get_Index_Of_Max(vec: in MathUtils.Vector) return Natural is
+      result: Positive := vec.First_Index;
+   begin
+      for i in vec.First_Index + 1 .. vec.Last_Index loop
+         if vec(i) > vec(result) then
+            result := i;
+         end if;
+      end loop;
+      return result;
+   end Get_Index_Of_Max;
+
    procedure testTrainInputMNIST(T : in out Test_Cases.Test_Case'Class) is
       set: TrainingData.Set;
       validationSet: TrainingData.Set;
@@ -122,6 +133,7 @@ package body TrainingSetTests is
 
       pred: MathUtils.Vector;
       di: Positive := 1;
+      index_of_max: Positive := 1;
 
       failedPredictions: Natural := 0;
    begin
@@ -150,14 +162,10 @@ package body TrainingSetTests is
       for lab of validationSet.labels loop
          --  MathUtils.print(validationSet.values.data(di));
          pred := dnn.classify(validationSet.values.data(di));
-         for idx in pred.First_Index .. pred.Last_Index loop
-            if idx /= lab + 1 then
-               if pred(idx) > pred(lab + 1) then
-                  failedPredictions := failedPredictions + 1;
-                  exit;
-               end if;
-            end if;
-         end loop;
+         index_of_max := Get_Index_Of_Max(pred);
+         if index_of_max /= lab + 1 then
+            failedPredictions := failedPredictions + 1;
+         end if;
          di := di + 1;
       end loop;
       tm.report;
@@ -182,6 +190,7 @@ package body TrainingSetTests is
 
       pred: MathUtils.Vector;
       di: Positive := 1;
+      index_of_max: Positive := 1;
 
       failedPredictions: Natural := 0;
    begin
@@ -217,16 +226,12 @@ package body TrainingSetTests is
       Ada.Text_IO.Put_Line("Inference...");
       tm.reset;
       for lab of validationSet.labels loop
-         --  MathUtils.print(validationSet.values.data(di));
+         -- MathUtils.print(validationSet.values.data(di));
          pred := dnn.classify(validationSet.values.data(di));
-         for idx in pred.First_Index .. pred.Last_Index loop
-            if idx /= lab + 1 then
-               if pred(idx) > pred(lab + 1) then
-                  failedPredictions := failedPredictions + 1;
-                  exit;
-               end if;
-            end if;
-         end loop;
+         index_of_max := Get_Index_Of_Max(pred);
+         if index_of_max /= (lab + 1) then
+            failedPredictions := failedPredictions + 1;
+         end if;
          di := di + 1;
       end loop;
       tm.report;
