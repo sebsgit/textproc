@@ -54,6 +54,7 @@ private
       initialization_kernel: cl_objects.Kernel_Access;
       vertical_pass_kernel: cl_objects.Kernel_Access;
       merge_pass_kernel: cl_objects.Kernel_Access;
+      label_assign_pass_kernel: cl_objects.Kernel_Access;
    end record;
    overriding procedure Finalize(This: in out Processor);
 end GpuComponentLabeling;

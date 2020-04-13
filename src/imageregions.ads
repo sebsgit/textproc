@@ -5,6 +5,8 @@ package ImageRegions is
    -- 0 and 255 are reserved to represent 0 / 1 in "binary" images
    type RegionLabel is new Integer range 1 .. 254;
 
+   New_Region_Pixel_Threshold: constant Positive := 10;
+
    type Rect is tagged record
       x, y, width, height: Natural;
    end record;

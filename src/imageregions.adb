@@ -8,9 +8,6 @@ use Ada.Containers;
 -- keep track of (min, max) coords for each label
 --
 package body ImageRegions is
-
-   New_Region_Pixel_Threshold: constant Positive := 10;
-
    function toString(r: Rect) return String is
    begin
       return r.x'Image & ", " & r.y'Image & "; " & r.width'Image & "x" & r.height'Image;

@@ -80,10 +80,27 @@ package body GpuComponentLabeling is
      "   }" & NL &
      "}" & NL;
 
+   label_assignment_pass_source: constant String :=
+     "int label_index(uint label, __global const uint *labels, int label_count) {" & NL &
+     "   for (int i = 0; i < label_count; ++i) {" & NL &
+     "      if (labels[i] == label) return i + 1;" & NL &
+     "   }" & NL &
+     "   return 0;" & NL &
+     "}" & NL &
+     "__kernel void assign_labels(__global const ccl_data *data, __global uchar *output, int width, int height, __global uint *labels, int label_count) {" & NL &
+     "   const int px_x = get_global_id(0);" & NL &
+     "   const int px_y = get_global_id(1);" & NL &
+     "   const uint label = data[px_x + width * px_y].label;" & NL &
+     "   if (label > 0) {" & NL &
+     "      output[px_x + px_y * width] = label_index(label, labels, label_count);" & NL &
+     "   }" & NL &
+     "}" & NL;
+
    processing_program_source: constant String :=
      common_declarations_program_source & NL &
      vpass_kernel_source & NL &
      merge_pass_source & NL &
+     label_assignment_pass_source & NL &
      init_kernel_source & NL;
 
    function Get_Width(proc: in Processor) return Natural is
@@ -133,6 +150,9 @@ package body GpuComponentLabeling is
          if cl_code /= opencl.SUCCESS then return; end if;
 
          res.merge_pass_kernel := new cl_objects.Kernel'(res.processing_program.Create_Kernel("merge_pass", cl_code));
+         if cl_code /= opencl.SUCCESS then return; end if;
+
+         res.label_assign_pass_kernel := new cl_objects.Kernel'(res.processing_program.Create_Kernel("assign_labels", cl_code));
       end return;
    end Create;
 
@@ -144,6 +164,7 @@ package body GpuComponentLabeling is
       Free(This.initialization_kernel);
       Free(This.vertical_pass_kernel);
       Free(This.merge_pass_kernel);
+      Free(This.label_assign_pass_kernel);
       Free(This.processing_program);
    end Finalize;
 
@@ -342,21 +363,63 @@ package body GpuComponentLabeling is
       ccl_ev: constant cl_objects.Event := proc.Run_CCL(gpu_image      => gpu_image,
                                                         events_to_wait => opencl.no_events,
                                                         cl_code        => cl_code);
-      down_ev: cl_objects.Event := proc.Get_CCL_Data(host_buff      => host_ccl_data'Address,
-                                                     events_to_wait => (1 => ccl_ev.Get_Handle),
-                                                     cl_code        => cl_code);
+      ccl_down_ev: constant cl_objects.Event := proc.Get_CCL_Data(host_buff      => host_ccl_data'Address,
+                                                                  events_to_wait => (1 => ccl_ev.Get_Handle),
+                                                                  cl_code        => cl_code);
+
+      type HostLblBuff is array (Positive range <>) of opencl.cl_uint;
+      function Convert(v: in Region_Data_Vec.Vector) return HostLblBuff is
+         result: HostLblBuff(1 .. Natural(v.Length));
+         idx: Natural := 1;
+      begin
+         for v_idx in v.First_Index .. v.Last_Index loop
+            result(idx) := v(v_idx);
+            idx := idx + 1;
+         end loop;
+         return result;
+      end Convert;
    begin
-      cl_code := down_ev.Wait;
       if cl_code = opencl.SUCCESS then
          declare
             use ImageRegions;
 
             new_rg: ImageRegions.Region;
-            label: ImageRegions.RegionLabel := 1;
-            reg_lbl: Natural := 1;
-            unique_labels: constant Region_Data_Vec.Vector := Find_Unique_Labels(host_ccl_data);
             gpu_rg: Pixel_CCL_Data;
+            label: ImageRegions.RegionLabel := 1;
+            unique_labels: constant Region_Data_Vec.Vector := Find_Unique_Labels(host_ccl_data);
+
+            unique_labels_gpu_buff: aliased HostLblBuff := Convert(unique_labels);
+            label_buffer: cl_objects.Buffer := proc.context.Create_Buffer(flags         => (opencl.COPY_HOST_PTR => True, others => False),
+                                                                          size          => Natural(unique_labels.Length) * 4,
+                                                                          host_ptr      => unique_labels_gpu_buff'Address,
+                                                                          result_status => cl_code);
+            label_count_arg: aliased opencl.cl_int := opencl.cl_int(unique_labels.Length);
          begin
+            cl_code := proc.label_assign_pass_kernel.Set_Arg(0, opencl.Raw_Address'Size / 8, proc.ccl_data.Get_Address);
+            cl_code := proc.label_assign_pass_kernel.Set_Arg(1, opencl.Raw_Address'Size / 8, gpu_image.Get_Address);
+            cl_code := proc.label_assign_pass_kernel.Set_Arg(2, 4, proc.width'Address);
+            cl_code := proc.label_assign_pass_kernel.Set_Arg(3, 4, proc.height'Address);
+            cl_code := proc.label_assign_pass_kernel.Set_Arg(4, opencl.Raw_Address'Size / 8, label_buffer.Get_Address);
+            cl_code := proc.label_assign_pass_kernel.Set_Arg(5, 4, label_count_arg'Address);
+            declare
+               label_pass_ev: constant cl_objects.Event := proc.gpu_queue.Enqueue_Kernel(kern               => proc.label_assign_pass_kernel.all,
+                                                                                         glob_ws            => (1 => proc.Get_Width, 2 => proc.Get_Height),
+                                                                                         loc_ws             => opencl.Get_Local_Work_Size(proc.Get_Width, proc.Get_Height),
+                                                                                         events_to_wait_for => opencl.no_events,
+                                                                                         code               => cl_code);
+               data_downl_ev: constant cl_objects.Event := PixelArray.Gpu.Download(queue         => proc.gpu_queue.all,
+                                                                                   source        => gpu_image,
+                                                                                   target        => preprocessed_cpu_image,
+                                                                                   event_to_wait => (1 => label_pass_ev.Get_Handle),
+                                                                                   status        => cl_code);
+            begin
+               if cl_code /= opencl.SUCCESS then
+                  return result;
+               end if;
+               cl_code := opencl.Wait_For_Events((1 => ccl_down_ev.Get_Handle, 2 => data_downl_ev.Get_Handle));
+
+            end; -- assign label pass kernel run
+
             for lbl of unique_labels loop
                gpu_rg := host_ccl_data(Natural(lbl));
                new_rg.label := label;
@@ -375,33 +438,12 @@ package body GpuComponentLabeling is
                new_rg.center.x := Float(new_rg.area.x + new_rg.area.width / 2);
                new_rg.center.y := Float(new_rg.area.y + new_rg.area.height / 2);
 
-               if new_rg.pixelCount > 10 then
+               if new_rg.pixelCount > ImageRegions.New_Region_Pixel_Threshold then
                   result.Append(new_rg);
-                  label := label + 1;
                end if;
+               label := label + 1;
             end loop;
 
-            reg_lbl := 0;
-            for rg of host_ccl_data loop
-               reg_lbl := reg_lbl + 1;
-               if rg.label /= 0 then
-                  label := 1;
-                  for d of unique_labels loop
-                     if Natural(d) = Natural(rg.label) then
-                        exit;
-                     end if;
-                     label := label + 1;
-                  end loop;
-
-                  declare
-                     px_x, px_y: Natural := 0;
-                  begin
-                     px_x := Natural(reg_lbl - 1) mod preprocessed_cpu_image.width;
-                     px_y := Natural(reg_lbl - 1) / preprocessed_cpu_image.width;
-                     preprocessed_cpu_image.set(px_x, px_y, PixelArray.Pixel(label));
-                  end;
-               end if;
-            end loop;
          end;
       end if;
       return result;
