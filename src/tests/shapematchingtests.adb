@@ -27,12 +27,9 @@ package body ShapeMatchingTests is
    end Name;
 
    function testShape(db: ShapeDatabase.DB; path: String) return ShapeDatabase.MatchScore is
-      image: PixelArray.ImagePlane := ShapeDatabase.preprocess(ImageIO.load(path));
       regions: ImageRegions.RegionVector.Vector;
+      image: constant PixelArray.ImagePlane := ShapeDatabase.Preprocess_And_Detect_Regions(ImageIO.load(path), regions);
    begin
-      -- detect regions
-      regions := ImageRegions.detectRegions(image);
-
       return db.match(image, regions.First_Element);
    end testShape;
 
@@ -58,8 +55,7 @@ package body ShapeMatchingTests is
       end matchAt;
    begin
       db := ShapeDatabase.getDB;
-      testImage.assign(ShapeDatabase.preprocess(testImage));
-      regions := ImageRegions.detectRegions(testImage);
+      testImage.assign(ShapeDatabase.Preprocess_And_Detect_Regions(testImage, regions));
       ImageRegions.sortRegions(regions);
       Assert(regions.Length = 11, "count of detected regions");
 

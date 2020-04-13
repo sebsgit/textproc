@@ -90,15 +90,23 @@ package body ShapeDatabase is
       end if;
    end Init_Gpu;
 
-   function Detect_Image_Regions(image: in out PixelArray.ImagePlane) return ImageRegions.RegionVector.Vector is
+   procedure Detect_Image_Regions(image: in out PixelArray.ImagePlane; res: out ImageRegions.RegionVector.Vector) is
       cl_code: opencl.Status;
    begin
       if gpu_detector /= null then
-         return gpu_detector.Detect_Regions_And_Assign_Labels(preprocessed_cpu_image => image,
+         res := gpu_detector.Detect_Regions_And_Assign_Labels(preprocessed_cpu_image => image,
                                                               cl_code                => cl_code);
+      else
+         res := ImageRegions.detectRegions(image);
       end if;
-      return ImageRegions.detectRegions(image);
    end Detect_Image_Regions;
+
+   function Preprocess_And_Detect_Regions(image: in PixelArray.ImagePlane; res: out ImageRegions.RegionVector.Vector) return PixelArray.ImagePlane is
+   begin
+      return processed: PixelArray.ImagePlane := preprocess(image) do
+         Detect_Image_Regions(processed, res);
+      end return;
+   end Preprocess_And_Detect_Regions;
 
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane is
       fallback_to_cpu: Boolean := True;
@@ -178,13 +186,10 @@ package body ShapeDatabase is
 
    function loadShape(cc: Character; path: String) return CharacterDescriptor is
       result: CharacterDescriptor;
-      image: PixelArray.ImagePlane := preprocess(ImageIO.load(path));
       regions: ImageRegions.RegionVector.Vector;
+      image: constant PixelArray.ImagePlane := Preprocess_And_Detect_Regions(ImageIO.load(path), regions);
    begin
       result.c := cc;
-      -- detect regions
-      regions := Detect_Image_Regions(image);
-
       result.d := processRegion(image, regions.First_Element);
 
       return result;
@@ -247,11 +252,10 @@ package body ShapeDatabase is
 
    function loadShapes(imagePath: String) return ShapeVector.Vector is
       result: ShapeVector.Vector;
-      image: PixelArray.ImagePlane := preprocess(ImageIO.load(imagePath));
       r: ImageRegions.RegionVector.Vector;
+      image: constant PixelArray.ImagePlane := Preprocess_And_Detect_Regions(ImageIO.load(imagePath), r);
       basePath: constant Ada.Strings.Unbounded.Unbounded_String := getCharacterString(imagePath);
    begin
-      r := Detect_Image_Regions(image);
       if Integer(r.Length) /= Ada.Strings.Unbounded.Length(basePath) then
          raise Capacity_Error with imagePath & " --> " & Ada.Strings.Unbounded.To_String(basePath) & ": processing error";
       end if;

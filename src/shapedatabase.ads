@@ -43,6 +43,8 @@ package ShapeDatabase is
    function preprocess(image: PixelArray.ImagePlane) return PixelArray.ImagePlane
      with Post => ImageThresholds.isBinary(preprocess'Result);
 
+   function Preprocess_And_Detect_Regions(image: in PixelArray.ImagePlane; res: out ImageRegions.RegionVector.Vector) return PixelArray.ImagePlane;
+
    function getDB return DB;
    function match(database: DB; image: PixelArray.ImagePlane; region: ImageRegions.Region) return MatchScore;
 

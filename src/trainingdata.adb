@@ -55,11 +55,10 @@ package body TrainingData is
 
    procedure loadFrom(data: in out Set; path: in Ada.Strings.Unbounded.Unbounded_String; expectedChars: in Ada.Strings.Unbounded.Unbounded_String) is
       image: constant PixelArray.ImagePlane := ImageIO.load(Ada.Strings.Unbounded.To_String(path));
-      preprocessed: PixelArray.ImagePlane := ShapeDatabase.preprocess(image);
       regions: ImageRegions.RegionVector.Vector;
+      preprocessed: constant PixelArray.ImagePlane := ShapeDatabase.Preprocess_And_Detect_Regions(image, regions);
       saveStatus: Boolean;
    begin
-      regions := ImageRegions.detectRegions(preprocessed);
       filterRegions(regions);
       ImageRegions.sortRegions(regions);
 
