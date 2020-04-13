@@ -23,6 +23,13 @@ with GpuComponentLabeling; use GpuComponentLabeling;
 
 package body ShapeDatabase is
 
+   Gauss_Filter_Kernel_Size: constant Positive := 7;
+   Gauss_Filter_Sigma: constant Float := 2.4;
+   Bernsen_Threshold_Circle_Radius: constant Positive := 10;
+   Bernsen_Threshold_Contrast_Limit: constant PixelArray.Pixel := 35;
+   Erode_Kernel_Size: constant Positive := 7;
+   Dilate_Kernel_Size: constant Positive := 7;
+
    gpu_context: cl_objects.Context_Access;
    gpu_processor: GpuImageProc.Processor_Access;
    gpu_detector: GpuComponentLabeling.Processor_Access;
@@ -103,6 +110,40 @@ package body ShapeDatabase is
       end if;
    end Detect_Image_Regions;
 
+   function Preprocess_Gpu(gpuSource: in out PixelArray.Gpu.GpuImage; cl_code: out opencl.Status) return cl_objects.Event is
+      gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Create(ctx    => gpu_context.all,
+                                                                  flags  => (others => False),
+                                                                  width => gpuSource.Get_Width,
+                                                                  height => gpuSource.Get_Height,
+                                                                  status => cl_code);
+      gauss_proc_event: constant cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
+                                                                                   source  => gpuSource,
+                                                                                   target  => gpuTarget,
+                                                                                   size    => Gauss_Filter_Kernel_Size,
+                                                                                   sigma   => Gauss_Filter_Sigma,
+                                                                                   cl_code => cl_code);
+      proc_event: constant cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
+                                                                                          source  => gpuTarget,
+                                                                                          target  => gpuSource,
+                                                                                          radius  => Bernsen_Threshold_Circle_Radius,
+                                                                                          c_min   => Bernsen_Threshold_Contrast_Limit,
+                                                                                          events_to_wait => (1 => gauss_proc_event.Get_Handle),
+                                                                                          cl_code => cl_code);
+      erode_event: constant cl_objects.Event := gpu_processor.Erode(ctx            => gpu_context.all,
+                                                                    source         => gpuSource,
+                                                                    target         => gpuTarget,
+                                                                    size           => Erode_Kernel_Size,
+                                                                    events_to_wait => (1 => proc_event.Get_Handle),
+                                                                    cl_code        => cl_code);
+   begin
+      return gpu_processor.Dilate(ctx            => gpu_context.all,
+                                  source         => gpuTarget,
+                                  target         => gpuSource,
+                                  size           => Dilate_Kernel_Size,
+                                  events_to_wait => (1 => erode_event.Get_Handle),
+                                  cl_code        => cl_code);
+   end Preprocess_Gpu;
+
    function Preprocess_And_Detect_Regions(image: in PixelArray.ImagePlane; res: out ImageRegions.RegionVector.Vector) return PixelArray.ImagePlane is
    begin
       if gpu_detector = null or gpu_processor = null then
@@ -118,40 +159,12 @@ package body ShapeDatabase is
                                                                            flags  => (others => False),
                                                                            image  => image,
                                                                            status => cl_code);
-               gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Create(ctx    => gpu_context.all,
-                                                                           flags  => (others => False),
-                                                                           width => image.width,
-                                                                           height => image.height,
-                                                                           status => cl_code);
-               gauss_proc_event: constant cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
-                                                                                            source  => gpuSource,
-                                                                                            target  => gpuTarget,
-                                                                                            size    => 7,
-                                                                                            sigma   => 2.4,
-                                                                                            cl_code => cl_code);
-               proc_event: constant cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
-                                                                                                   source  => gpuTarget,
-                                                                                                   target  => gpuSource,
-                                                                                                   radius  => 10,
-                                                                                                   c_min   => 35,
-                                                                                                   events_to_wait => (1 => gauss_proc_event.Get_Handle),
-                                                                                                   cl_code => cl_code);
-               erode_event: constant cl_objects.Event := gpu_processor.Erode(ctx            => gpu_context.all,
-                                                                             source         => gpuSource,
-                                                                             target         => gpuTarget,
-                                                                             size           => 7,
-                                                                             events_to_wait => (1 => proc_event.Get_Handle),
-                                                                             cl_code        => cl_code);
-               dilate_event: constant cl_objects.Event := gpu_processor.Dilate(ctx            => gpu_context.all,
-                                                                               source         => gpuTarget,
-                                                                               target         => gpuSource,
-                                                                               size           => 7,
-                                                                               events_to_wait => (1 => erode_event.Get_Handle),
-                                                                               cl_code        => cl_code);
+               preproc_event: constant cl_objects.Event := Preprocess_Gpu(gpuSource => gpuSource,
+                                                                          cl_code   => cl_code);
             begin
                res := gpu_detector.Detect_Regions_And_Assign_Labels(preprocessed_gpu_image => gpuSource,
                                                                     target_cpu_image       => result,
-                                                                    events_to_wait         => (1 => dilate_event.Get_Handle),
+                                                                    events_to_wait         => (1 => preproc_event.Get_Handle),
                                                                     cl_code                => cl_code);
             end;
          end return;
@@ -172,37 +185,9 @@ package body ShapeDatabase is
                                                                            flags  => (others => False),
                                                                            image  => image,
                                                                            status => cl_code);
-               gpuTarget: PixelArray.Gpu.GpuImage := PixelArray.Gpu.Create(ctx    => gpu_context.all,
-                                                                           flags  => (others => False),
-                                                                           width => image.width,
-                                                                           height => image.height,
-                                                                           status => cl_code);
-               gauss_proc_event: constant cl_objects.Event := gpu_processor.Gaussian_Filter(ctx     => gpu_context.all,
-                                                                                            source  => gpuSource,
-                                                                                            target  => gpuTarget,
-                                                                                            size    => 7,
-                                                                                            sigma   => 2.4,
-                                                                                            cl_code => cl_code);
-               proc_event: constant cl_objects.Event := gpu_processor.Bernsen_Adaptative_Threshold(ctx     => gpu_context.all,
-                                                                                                   source  => gpuTarget,
-                                                                                                   target  => gpuSource,
-                                                                                                   radius  => 10,
-                                                                                                   c_min   => 35,
-                                                                                                   events_to_wait => (1 => gauss_proc_event.Get_Handle),
-                                                                                                   cl_code => cl_code);
-               erode_event: constant cl_objects.Event := gpu_processor.Erode(ctx            => gpu_context.all,
-                                                                             source         => gpuSource,
-                                                                             target         => gpuTarget,
-                                                                             size           => 7,
-                                                                             events_to_wait => (1 => proc_event.Get_Handle),
-                                                                             cl_code        => cl_code);
-               dilate_event: constant cl_objects.Event := gpu_processor.Dilate(ctx            => gpu_context.all,
-                                                                               source         => gpuTarget,
-                                                                               target         => gpuSource,
-                                                                               size           => 7,
-                                                                               events_to_wait => (1 => erode_event.Get_Handle),
-                                                                               cl_code        => cl_code);
-               downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, (1 => dilate_event.Get_Handle), cl_code);
+               preproc_event: constant cl_objects.Event := Preprocess_Gpu(gpuSource => gpuSource,
+                                                                          cl_code   => cl_code);
+               downl_ev: cl_objects.Event := PixelArray.Gpu.Download(gpu_processor.Get_Command_Queue.all, gpuSource, result, (1 => preproc_event.Get_Handle), cl_code);
             begin
                cl_code := downl_ev.Wait;
                if cl_code = opencl.SUCCESS then
@@ -213,13 +198,13 @@ package body ShapeDatabase is
 
          if fallback_to_cpu then
             Ada.Text_IO.Put_Line("GPU download failed, fallback to CPU");
-            result.assign(ImageFilters.gaussian(image, 7, 2.4));
+            result.assign(ImageFilters.gaussian(image, Gauss_Filter_Kernel_Size, Gauss_Filter_Sigma));
             result.assign(ImageThresholds.bernsenAdaptative(result,
-                          radius => 10,
-                          c_min  => 35));
+                          radius => Bernsen_Threshold_Circle_Radius,
+                          c_min  => Bernsen_Threshold_Contrast_Limit));
             -- apply morphology to strenghten shapes
-            result.assign(Morphology.erode(result, 7));
-            result.assign(Morphology.dilate(result, 7));
+            result.assign(Morphology.erode(result, Erode_Kernel_Size));
+            result.assign(Morphology.dilate(result, Dilate_Kernel_Size));
          end if;
       end return;
    end preprocess;
