@@ -7,6 +7,7 @@ with ShapeDatabaseTest;
 with HistogramTests;
 with HistogramDescriptorTests;
 with NeuralNetTests;
+with NeuralNetIOTests;
 with DataBatchTests;
 with NNClassifierTests;
 with TrainingSetTests;
@@ -28,6 +29,7 @@ package body MainTestSuite is
    histogramDescriptorTestCase: aliased HistogramDescriptorTests.TestCase;
    shapeDbTests: aliased ShapeDatabaseTest.TestCase;
    nnTests: aliased NeuralNetTests.TestCase;
+   nnioTests: aliased NeuralNetIOTests.TestCase;
    dataBatchTestCase: aliased DataBatchTests.TestCase;
    nnClassifyTestCase: aliased NNClassifierTests.TestCase;
    trainSetTestCase: aliased TrainingSetTests.TestCase;
@@ -38,6 +40,7 @@ package body MainTestSuite is
 
    function Suite return Access_Test_Suite is
    begin
+      Add_Test(suiteObject'Access, nnioTests'Access);
       Add_Test(suiteObject'Access, openclTestCase'Access);
       Add_Test(suiteObject'Access, gpuImageTestCase'Access);
       Add_Test(suiteObject'Access, gpuCCLTestCase'Access);

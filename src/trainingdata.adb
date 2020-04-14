@@ -60,12 +60,12 @@ package body TrainingData is
    function load_for_processing(path: in Ada.Strings.Unbounded.Unbounded_String) return PixelArray.ImagePlane is
    begin
       return image: PixelArray.ImagePlane := ImageIO.load(Ada.Strings.Unbounded.To_String(path)) do
-         if image.width > Preferred_Width  then
+         if image.width > Preferred_Width then
             declare
                ratio: constant Float := Float(Preferred_Width) / Float(image.width);
                new_height: constant Positive := Positive(Float(image.height) * ratio);
             begin
-               image.assign(image.rescale(Preferred_Width, new_height));
+               image.assign(image.rescale(Preferred_Width, (if new_height mod 2 = 0 then new_height else new_height + 1)));
             end;
          end if;
       end return;
