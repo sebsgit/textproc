@@ -111,9 +111,11 @@ package body NeuralNet is
       return input;
    end forward;
 
+   --TODO parametrize by loss function
    function calculateNeuronErr(n: in Neuron; targetVal: Float) return Float is
+      loss_func_derivative : constant Float := (n.a - targetVal); --TODO hard-coded to mean squared error loss
    begin
-      return (n.a - targetVal) * derivative(n, n.z);
+      return loss_func_derivative * derivative(n, n.z);
    end calculateNeuronErr;
 
    function clipGradient(nn: in Net; val: Float) return Float
