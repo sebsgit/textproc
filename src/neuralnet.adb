@@ -111,13 +111,6 @@ package body NeuralNet is
       return input;
    end forward;
 
-   --TODO parametrize by loss function
-   function calculateNeuronErr(n: in Neuron; targetVal: Float) return Float is
-      loss_func_derivative : constant Float := (n.a - targetVal); --TODO hard-coded to mean squared error loss
-   begin
-      return loss_func_derivative * derivative(n, n.z);
-   end calculateNeuronErr;
-
    function clipGradient(nn: in Net; val: Float) return Float
      with Pre => nn.conf.gradientClipAbs >= 0.0
    is
@@ -131,22 +124,44 @@ package body NeuralNet is
       end if;
    end clipGradient;
 
+   procedure calculateLossDerivative(actual, expected: in MathUtils.Vector; result: in out MathUtils.Vector)
+     with Pre => (actual.Length = expected.Length) and (expected.Length = result.Length)
+   is
+      index_act: Positive := actual.First_Index;
+      index_exp: Positive := expected.First_Index;
+   begin
+      for res of result loop
+         res := actual(index_act) - expected(index_exp); --TODO hard-coded to mean squared error loss
+         index_act := index_act + 1;
+         index_exp := index_exp + 1;
+      end loop;
+   end calculateLossDerivative;
+
    -- implements the backpropagation algorithm for nn
    procedure backward(nn: in out Net; input: in MathUtils.Vector; target: in MathUtils.Vector)
      with Pre => input.Length = nn.layers.First_Element.First_Element.w'Length
    is
       ti: Positive := target.First_Index;
       lastLayer: NeuronVecPkg.Vector renames nn.layers.Last_Element;
+      neurons_activation: MathUtils.Vector;
    begin
+      neurons_activation.Reserve_Capacity(Capacity => lastLayer.Length);
       -- errors in the output layer
       for n in lastLayer.First_Index .. lastLayer.Last_Index loop
-         declare
-            grad_vec_ref: MathUtils.Vector renames nn.gradients(nn.layers.Last_Index);
-         begin
-            grad_vec_ref(n) := calculateNeuronErr(lastLayer(n), target(ti));
-         end;
-         ti := ti + 1;
+         neurons_activation.Append(lastLayer(n).a); --TODO update the nn representation
       end loop;
+
+      declare
+         grad_vec_ref: MathUtils.Vector renames nn.gradients(nn.layers.Last_Index);
+      begin
+         --TODO parametrize by loss function
+         calculateLossDerivative(actual   => neurons_activation,
+                                 expected => target,
+                                 result   => grad_vec_ref);
+         for n in lastLayer.First_Index .. lastLayer.Last_Index loop
+            grad_vec_ref(n) := grad_vec_ref(n) * derivative(lastLayer(n), lastLayer(n).z);
+         end loop;
+      end;
 
       -- error propagation
       declare
