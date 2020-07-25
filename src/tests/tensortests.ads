@@ -10,7 +10,6 @@ package TensorTests is
 
    procedure testTensor(T : in out Test_Cases.Test_Case'Class);
    procedure testFlatten(T : in out Test_Cases.Test_Case'Class);
-   procedure testDataAddress(T : in out Test_Cases.Test_Case'Class);
    procedure testDataGetter(T : in out Test_Cases.Test_Case'Class);
    procedure testDot(T : in out Test_Cases.Test_Case'Class);
    procedure testPlus(T : in out Test_Cases.Test_Case'Class);

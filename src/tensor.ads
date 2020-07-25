@@ -1,20 +1,26 @@
 with Ada.Numerics.Generic_Real_Arrays;
+with Ada.Containers.Vectors;
 with System; use System;
+
+with MathUtils;
 
 package Tensor is
    pragma Elaborate_Body(Tensor);
-   pragma Preelaborate(Tensor);
 
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);
 
    package Float_Vec is new Ada.Numerics.Generic_Real_Arrays(Real => Float);
+   package Int_Vec is new Ada.Containers.Vectors(Index_Type   => Positive,
+                                                 Element_Type => Positive);
 
-   type Dims is array (Natural range <>) of Natural;
+   type Dims is new Int_Vec.Vector with null record;
    type Float_Array is array (Natural range <>) of Float;
 
-   type Var (n_dims, total_size: Positive) is tagged private;
+   type Var is tagged private;
+
+   function Allocate(value_count: in Positive) return Var;
 
    function Variable(values: in Float_Array) return Var
      with Pre => values'Length > 0,
@@ -30,9 +36,7 @@ package Tensor is
 
    function Element_Count(d: in Var'Class) return Positive;
 
-   function Data_Address(v: in Var'Class) return System.Address
-     with Post => Data_Address'Result /= System.Null_Address;
-   function Data(v: in Var) return Float_Vec.Real_Vector;
+   function Data(v: in Var) return MathUtils.Vector;
 
    function Element(v: in Var; idx_0, idx_1: in Positive) return Float
      with Pre =>
@@ -40,10 +44,18 @@ package Tensor is
        or else
          (Dimension_Count(v) = 1 and then idx_1 <= Dimension(v, 1) and then idx_0 = 1);
 
+   procedure Set(v: out Var; values: in Float_Array)
+     with Pre => Element_Count(v) = values'Length;
+
    function Flatten(v: in Var'Class) return Var
-     with Post => Dimension_Count(Flatten'Result) = 1 and then Dimension(Flatten'Result, 1) = v.total_size;
+     with Post => Dimension_Count(Flatten'Result) = 1 and then Dimension(Flatten'Result, 1) = Element_Count(v);
    procedure Flatten(v: in out Var'Class)
-     with Post => Dimension_Count(v) = 1 and then Dimension(v, 1) = v.total_size;
+     with Post => Dimension_Count(v) = 1 and then Dimension(v, 1) = Element_Count(v);
+
+   procedure Reshape(v: in out Var'Class; s0, s1: Positive)
+     with Pre => Element_Count(v) = s0 * s1;
+
+   procedure Random(v: in out Var'Class);
 
    function Dot(v0, v1: in Var'Class) return Var
      with Pre => Dimension(v0, Dimension_Count(v0)) = Dimension(v1, 1);
@@ -57,8 +69,8 @@ package Tensor is
      Post => Dimension_Count("-"'Result) = Dimension_Count(v0) and then Element_Count("-"'Result) = Element_Count(v0);
 
 private
-   type Var (n_dims, total_size: Positive) is tagged record
-      data: aliased Float_Vec.Real_Vector (1 .. total_size);
-      size: Dims (1 .. n_dims);
+   type Var is tagged record
+      data: aliased MathUtils.Vector;
+      size: Dims;
    end record;
 end Tensor;

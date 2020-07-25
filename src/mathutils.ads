@@ -4,6 +4,7 @@ with Ada.Numerics.Generic_Elementary_Functions;
 
 package MathUtils is
    pragma Elaborate_Body(MathUtils);
+
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);

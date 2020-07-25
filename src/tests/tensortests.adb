@@ -12,7 +12,6 @@ package body TensorTests is
    begin
       Register_Routine (T, testTensor'Access, "tensor API");
       Register_Routine (T, testFlatten'Access, "tensor API: Flatten");
-      Register_Routine (T, testDataAddress'Access, "tensor API: Data_Address");
       Register_Routine (T, testDataGetter'Access, "tensor API: Data");
       Register_Routine (T, testDot'Access, "tensor API: Dot");
       Register_Routine (T, testPlus'Access, "tensor API: +");
@@ -50,32 +49,6 @@ package body TensorTests is
       Assert(m0_flat.Dimension(1) = 6, "");
    end testFlatten;
 
-   procedure testDataAddress(T : in out Test_Cases.Test_Case'Class) is
-      m0: constant Tensor.Var := Tensor.Matrix(row_length => 3,
-                                               values     => (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
-      m0_data_addr: constant System.Address := m0.Data_Address;
-
-      type Float_6x1 is array (1 .. 6) of Float;
-      package Addr_Conv is new System.Address_To_Access_Conversions(Object => Float_6x1);
-
-      m0_data_ptr: constant Addr_Conv.Object_Pointer := Addr_Conv.To_Pointer(m0_data_addr);
-      m0_data: constant Float_6x1 := m0_data_ptr.all;
-   begin
-      Assert(m0_data(1) = 1.0, "");
-      Assert(m0_data(2) = 2.0, "");
-      Assert(m0_data(3) = 3.0, "");
-      Assert(m0_data(4) = 4.0, "");
-      Assert(m0_data(5) = 5.0, "");
-      Assert(m0_data(6) = 6.0, "");
-
-      Assert(m0_data(1) = m0.Data(1), "");
-      Assert(m0_data(2) = m0.Data(2), "");
-      Assert(m0_data(3) = m0.Data(3), "");
-      Assert(m0_data(4) = m0.Data(4), "");
-      Assert(m0_data(5) = m0.Data(5), "");
-      Assert(m0_data(6) = m0.Data(6), "");
-   end testDataAddress;
-
    procedure testDataGetter(T : in out Test_Cases.Test_Case'Class) is
       m0: constant Tensor.Var := Tensor.Matrix(row_length => 2,
                                                values     => (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
@@ -102,9 +75,9 @@ package body TensorTests is
 
       Assert(Ax.Dimension_Count = 1, "");
       Assert(Ax.Dimension(1) = 3, "");
-      Assert(Ax.Data(1) = 50.0, "");
-      Assert(Ax.Data(2) = 110.0, "");
-      Assert(Ax.Data(3) = 170.0, "");
+      Assert(Ax.Data.Element(1) = 50.0, "");
+      Assert(Ax.Data.Element(2) = 110.0, "");
+      Assert(Ax.Data.Element(3) = 170.0, "");
    end testDot;
 
    procedure testPlus(T : in out Test_Cases.Test_Case'Class) is
@@ -113,8 +86,8 @@ package body TensorTests is
    begin
       Assert(x2.Dimension_Count = 1, "");
       Assert(x2.Dimension(1) = 2, "");
-      Assert(x2.Data(1) = 20.0, "");
-      Assert(x2.Data(2) = 40.0, "");
+      Assert(x2.Data.Element(1) = 20.0, "");
+      Assert(x2.Data.Element(2) = 40.0, "");
    end testPlus;
 
    procedure testMinus(T : in out Test_Cases.Test_Case'Class) is
@@ -124,8 +97,8 @@ package body TensorTests is
    begin
       Assert(yx.Dimension_Count = 1, "");
       Assert(yx.Dimension(1) = 2, "");
-      Assert(yx.Data(1) = -9.0, "");
-      Assert(yx.Data(2) = -18.0, "");
+      Assert(yx.Data.Element(1) = -9.0, "");
+      Assert(yx.Data.Element(2) = -18.0, "");
    end testMinus;
 
 end TensorTests;
