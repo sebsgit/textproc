@@ -46,6 +46,8 @@ package body MainTestSuite is
    begin
       Add_Test(suiteObject'Access, tensorTestCase'Access);
       Add_Test(suiteObject'Access, layerModelTestCase'Access);
+      return suiteObject'Access;
+
       Add_Test(suiteObject'Access, nnioTests'Access);
       Add_Test(suiteObject'Access, openclTestCase'Access);
       Add_Test(suiteObject'Access, gpuImageTestCase'Access);

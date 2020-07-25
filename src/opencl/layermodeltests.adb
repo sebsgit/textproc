@@ -24,6 +24,7 @@ package body LayerModelTests is
    begin
 
       layer.weights.Set((1.0, 2.0));
+      layer.biases.Set((1 => 0.0));
       Assert(NN2.Output_Size(layer.all) = 1, "");
 
       declare
@@ -70,15 +71,19 @@ package body LayerModelTests is
                                     -0.5, 0.5));
       output_layer.weights.Set(values => (0.3, 0.4, 0.3));
 
+      layer0.biases.Set((0.5, 0.7));
+      layer1.biases.Set((1.1, 2.1, 3.1));
+      output_layer.biases.Set((1 => -1.0));
+
       declare
          input: constant Tensor.Var := Tensor.Variable(values => (10.0, 15.0, 20.0));
          output: constant Tensor.Var := model.Forward(input);
-         layer_0_res: constant Tensor.Float_Array := (1 => 1.0 * 10.0 + 2.0 * 15.0 + 1.0 * 20.0,
-                                                      2 => -1.0 * 10.0 - 2.0 * 15.0 - 1.0 * 20.0);
-         layer_1_res: constant Tensor.Float_Array := (1 => 0.5 * layer_0_res(1) + 0.2 * layer_0_res(2),
-                                                      2 => 0.7 * layer_0_res(1) + 0.3 * layer_0_res(2),
-                                                      3 => -0.5 * layer_0_res(1) + 0.5 * layer_0_res(2));
-         expected_result: constant Float := 0.3 * layer_1_res(1) + 0.4 * layer_1_res(2) + 0.3 * layer_1_res(3);
+         layer_0_res: constant Tensor.Float_Array := (1 => 1.0 * 10.0 + 2.0 * 15.0 + 1.0 * 20.0 + 0.5,
+                                                      2 => -1.0 * 10.0 - 2.0 * 15.0 - 1.0 * 20.0 + 0.7);
+         layer_1_res: constant Tensor.Float_Array := (1 => 0.5 * layer_0_res(1) + 0.2 * layer_0_res(2) + 1.1,
+                                                      2 => 0.7 * layer_0_res(1) + 0.3 * layer_0_res(2) + 2.1,
+                                                      3 => -0.5 * layer_0_res(1) + 0.5 * layer_0_res(2) + 3.1);
+         expected_result: constant Float := 0.3 * layer_1_res(1) + 0.4 * layer_1_res(2) + 0.3 * layer_1_res(3) - 1.0;
       begin
          Assert(output.Element_Count = 1, "");
          Assert(expected_result = output.Element(1, 1), "Expected: " & expected_result'Image & ", actual: " & Float(output.Element(1, 1))'Image);

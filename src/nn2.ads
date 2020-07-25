@@ -23,6 +23,7 @@ package NN2 is
    type DenseLayer is new Layer with
       record
          weights: Tensor.Var;
+         biases: Tensor.Var;
       end record;
 
    type Layer_Access is access Layer'Class;

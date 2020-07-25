@@ -64,6 +64,8 @@ package body NN2 is
       added_elem.weights := Tensor.Allocate(neuron_count * value_count);
       added_elem.weights.Reshape(neuron_count, value_count);
       added_elem.weights.Random;
+      added_elem.biases := Tensor.Allocate(neuron_count);
+      added_elem.biases.Random;
       return added_elem;
    end Add_Dense_Layer;
 
@@ -76,7 +78,7 @@ package body NN2 is
    function Forward(lay: in DenseLayer; values: in Tensor.Var) return Tensor.Var is
       result: Tensor.Var;
    begin
-      result := lay.weights.Dot(values);
+      result := lay.weights.Dot(values) + lay.biases;
       return result;
    end Forward;
 
