@@ -65,10 +65,10 @@ package body LayerModelTests is
       Assert(NN2.Output_Size(output_layer.all) = 1, "");
 
       layer0.weights.Set(values => (1.0, 2.0, 1.0,
-                                    -1.0, -2.0, -1.0));
+                                    -1.0, -0.5, 2.0));
       layer1.weights.Set(values => (0.5, 0.2,
                                     0.7, 0.3,
-                                    -0.5, 0.5));
+                                    -0.1, 0.5));
       output_layer.weights.Set(values => (0.3, 0.4, 0.3));
 
       layer0.biases.Set((0.5, 0.7));
@@ -79,10 +79,10 @@ package body LayerModelTests is
          input: constant Tensor.Var := Tensor.Variable(values => (10.0, 15.0, 20.0));
          output: constant Tensor.Var := model.Forward(input);
          layer_0_res: constant Tensor.Float_Array := (1 => 1.0 * 10.0 + 2.0 * 15.0 + 1.0 * 20.0 + 0.5,
-                                                      2 => -1.0 * 10.0 - 2.0 * 15.0 - 1.0 * 20.0 + 0.7);
+                                                      2 => -1.0 * 10.0 - 0.5 * 15.0 + 2.0 * 20.0 + 0.7);
          layer_1_res: constant Tensor.Float_Array := (1 => 0.5 * layer_0_res(1) + 0.2 * layer_0_res(2) + 1.1,
                                                       2 => 0.7 * layer_0_res(1) + 0.3 * layer_0_res(2) + 2.1,
-                                                      3 => -0.5 * layer_0_res(1) + 0.5 * layer_0_res(2) + 3.1);
+                                                      3 => -0.1 * layer_0_res(1) + 0.5 * layer_0_res(2) + 3.1);
          expected_result: constant Float := 0.3 * layer_1_res(1) + 0.4 * layer_1_res(2) + 0.3 * layer_1_res(3) - 1.0;
       begin
          Assert(output.Element_Count = 1, "");

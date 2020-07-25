@@ -11,12 +11,13 @@ package NN2 is
                             Type_Invariant => Check);
 
    type Model is tagged limited private;
+   type Activation is (RELU, LOGISTIC);
 
    type Layer is tagged limited record
-      null;
+      activator: Activation;
    end record;
 
-   function Forward(lay: in Layer; values: in Tensor.Var) return Tensor.Var;
+   function Forward(lay: in out Layer; values: in Tensor.Var) return Tensor.Var;
    function Input_Size(lay: in Layer) return Positive;
    function Output_Size(lay: in Layer) return Positive;
 
@@ -24,20 +25,24 @@ package NN2 is
       record
          weights: Tensor.Var;
          biases: Tensor.Var;
+
+         -- cache for backpropagation
+         weighted_output: Tensor.Var;
+         activations: Tensor.Var;
       end record;
 
    type Layer_Access is access Layer'Class;
    type Dense_Layer_Access is access all DenseLayer;
 
    function Create(input_size: in Positive) return Model;
-   procedure Add_Dense_Layer(m: in out Model; neuron_count: in Positive);
-   function Add_Dense_Layer(m: in out Model; neuron_count: in Positive) return Dense_Layer_Access;
+   procedure Add_Dense_Layer(m: in out Model; neuron_count: in Positive; act: in Activation := RELU);
+   function Add_Dense_Layer(m: in out Model; neuron_count: in Positive; act: in Activation := RELU) return Dense_Layer_Access;
 
    function Forward(m: in Model; values: in Tensor.Var) return Tensor.Var;
 
 
    overriding
-   function Forward(lay: in DenseLayer; values: in Tensor.Var) return Tensor.Var;
+   function Forward(lay: in out DenseLayer; values: in Tensor.Var) return Tensor.Var;
    overriding
    function Input_Size(lay: in DenseLayer) return Positive;
    overriding

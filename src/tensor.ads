@@ -68,6 +68,10 @@ package Tensor is
      with Pre => Dimension_Count(v0) = Dimension_Count(v1) and then Element_Count(v0) = Element_Count(v1),
      Post => Dimension_Count("-"'Result) = Dimension_Count(v0) and then Element_Count("-"'Result) = Element_Count(v0);
 
+   type Lambda_Func is access function (x: Float) return Float;
+
+   procedure Apply(v: in out Var; fn: Lambda_Func);
+
 private
    type Var is tagged record
       data: aliased MathUtils.Vector;

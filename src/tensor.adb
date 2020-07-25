@@ -169,4 +169,15 @@ package body Tensor is
       return result;
    end "-";
 
+   procedure Apply(v: in out Var; fn: Lambda_Func) is
+   begin
+      for idx in v.data.First_Index .. v.data.Last_Index loop
+         declare
+            new_val: constant Float := fn(v.data(idx));
+         begin
+            v.data.Replace_Element(idx, new_val);
+         end;
+      end loop;
+   end Apply;
+
 end Tensor;
