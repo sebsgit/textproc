@@ -3,12 +3,14 @@ with Ada.Containers.Vectors; use Ada.Containers;
 with Ada.Numerics.Generic_Elementary_Functions;
 
 package MathUtils is
+   pragma Elaborate_Body(MathUtils);
    pragma Assertion_Policy (Pre => Check,
                             Post => Check,
                             Type_Invariant => Check);
 
    package Float_Vec is new Ada.Containers.Vectors(Index_Type   => Positive,
                                                    Element_Type => Float);
+
    package F is new Ada.Numerics.Generic_Elementary_Functions(Float_Type => Float);
 
    subtype Vector is Float_Vec.Vector;
